@@ -11,3 +11,5 @@
 /.token
 /.npmtoken
 /node_modules
+/.mastra
+/.env

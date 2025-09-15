@@ -1,6 +1,6 @@
 {
-  "name": "@decaf-ts/ts-workspace",
-  "version": "3.0.3",
+  "name": "storybook-generator",
+  "version": "0.0.1",
   "description": "template for ts projects",
   "type": "module",
   "exports": {
@@ -10,11 +10,12 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "do-install": "TOKEN=$(cat .token) npm install",
+    "update-dependencies": "PREFIX=\"mastra\"; npm ls | grep \"$PREFIX\" | awk -F/ '{print $NF}' | sed 's/@.*//' | xargs -I package npm update @\"$PREFIX\"/package",
     "before-install": "chmod +x ./bin/template_setup.sh && ./bin/template_setup.sh",
     "flash-forward": "npx npm-check-updates -u && npm run do-install",
     "reset": "rm -rf * && git checkout . && git pull && npm run do-install",
-    "build": "rimraf ./lib && rimraf ./dist && gulp dev",
-    "build:prod": "rimraf ./lib && rimraf ./dist && gulp prod",
+    "dev": "mastra dev",
+    "build": "mastra build",
     "test": "jest --coverage --testPathPattern=\"/tests/unit\" --passWithNoTests --detectOpenHandles",
     "test:integration": "jest --coverage --testPathPattern=\"/tests/(integration)\" --passWithNoTests --detectOpenHandles",
     "test:all": "jest --coverage --testPathPattern=\"/tests/(unit|integration)\" --passWithNoTests --detectOpenHandles",
@@ -69,6 +70,7 @@
     "@eslint/js": "^9.12.0",
     "@stylistic/eslint-plugin": "^2.9.0",
     "@types/jest": "^29.5.13",
+    "@types/node": "^24.2.0",
     "clean-publish": "^5.0.0",
     "dpdm": "^3.14.0",
     "eslint": "^9.12.0",
@@ -98,9 +100,28 @@
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
+    "typescript": "^5.9.2",
     "typescript-eslint": "^8.10.0",
     "vinyl-named": "^1.1.0",
     "webpack-stream": "^7.0.0"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.2.22",
+    "@ai-sdk/openai": "^1.3.23",
+    "@decaf-ts/logging": "^0.3.7",
+    "@google/genai": "^1.12.0",
+    "@google/generative-ai": "^0.24.1",
+    "@mastra/core": "^0.16.3",
+    "@mastra/evals": "^0.13.6",
+    "@mastra/libsql": "^0.14.1",
+    "@mastra/loggers": "^0.10.11",
+    "@mastra/memory": "^0.15.1",
+    "@modelcontextprotocol/server-filesystem": "^2025.7.29",
+    "@types/pdfkit": "^0.17.2",
+    "canvas": "^3.1.2",
+    "jspdf": "^2.5.1",
+    "mastra": "^0.12.3",
+    "pdfkit": "^0.17.1",
+    "zod": "^3.22.4"
   }
 }

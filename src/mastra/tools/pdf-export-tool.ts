@@ -32,8 +32,8 @@ export const pdfExportTool = createTool({
     }).optional(),
   }),
   execute: async ({ context }) => {
-    log.info('🚀 [PDF Export Tool] Starting PDF generation process...');
-    log.info(`📋 [PDF Export Tool] Input parameters:`, {
+    console.log('🚀 [PDF Export Tool] Starting PDF generation process...');
+    console.log(`📋 [PDF Export Tool] Input parameters:`, {
       title: context.title,
       includeImages: context.includeImages,
       format: context.format,
@@ -54,14 +54,14 @@ export const pdfExportTool = createTool({
         projectRoot = path.resolve(projectRoot, '../..');
       }
       const outputDir = path.join(projectRoot, 'generated-exports');
-      log.info(`📁 [PDF Export Tool] Project root: ${projectRoot}`);
-      log.info(`📁 [PDF Export Tool] Creating output directory: ${outputDir}`);
+      console.log(`📁 [PDF Export Tool] Project root: ${projectRoot}`);
+      console.log(`📁 [PDF Export Tool] Creating output directory: ${outputDir}`);
 
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
-        log.info(`✅ [PDF Export Tool] Output directory created successfully`);
+        console.log(`✅ [PDF Export Tool] Output directory created successfully`);
       } else {
-        log.info(`✅ [PDF Export Tool] Output directory already exists`);
+        console.log(`✅ [PDF Export Tool] Output directory already exists`);
       }
 
       // Generate filename with timestamp
@@ -70,11 +70,11 @@ export const pdfExportTool = createTool({
       const filename = `${safeTitle}_storyboard_${timestamp}.pdf`;
       const pdfPath = path.join(outputDir, filename);
 
-      log.info(`📄 [PDF Export Tool] Generated filename: ${filename}`);
-      log.info(`📄 [PDF Export Tool] Full PDF path: ${pdfPath}`);
+      console.log(`📄 [PDF Export Tool] Generated filename: ${filename}`);
+      console.log(`📄 [PDF Export Tool] Full PDF path: ${pdfPath}`);
 
       // Create PDF document
-      log.info(`🖨️ [PDF Export Tool] Creating PDF document with format: ${context.format}`);
+      console.log(`🖨️ [PDF Export Tool] Creating PDF document with format: ${context.format}`);
       const doc = new PDFDocument({
         size: context.format,
         margins: {
@@ -89,11 +89,11 @@ export const pdfExportTool = createTool({
       const writeStream = fs.createWriteStream(pdfPath);
       doc.pipe(writeStream);
 
-      log.info(`📝 [PDF Export Tool] PDF document created and piped to file stream`);
+      console.log(`📝 [PDF Export Tool] PDF document created and piped to file stream`);
 
       // Helper function to draw flower borders
       function drawFlowerBorder(doc: PDFKit.PDFDocument) {
-        log.info(`🌸 [PDF Export Tool] Drawing flower borders on page`);
+        console.log(`🌸 [PDF Export Tool] Drawing flower borders on page`);
         const pageWidth = doc.page.width;
         const pageHeight = doc.page.height;
         const margin = 40;
@@ -112,7 +112,7 @@ export const pdfExportTool = createTool({
           { x: pageWidth - margin, y: pageHeight - margin } // Bottom-right
         ];
 
-        log.info(`🌸 [PDF Export Tool] Drawing ${corners.length} corner flowers`);
+        console.log(`🌸 [PDF Export Tool] Drawing ${corners.length} corner flowers`);
 
         corners.forEach((corner, index) => {
           const color = flowerColors[index % flowerColors.length];
@@ -143,7 +143,7 @@ export const pdfExportTool = createTool({
 
         // Draw small flowers along the sides - more flowers and much larger
         const sideFlowers = 6;
-        log.info(`🌸 [PDF Export Tool] Drawing ${sideFlowers} side flowers on each edge`);
+        console.log(`🌸 [PDF Export Tool] Drawing ${sideFlowers} side flowers on each edge`);
 
         for (let i = 1; i < sideFlowers; i++) {
           const progress = i / sideFlowers;
@@ -243,21 +243,21 @@ export const pdfExportTool = createTool({
 
         // Restore state
         doc.restore();
-        log.info(`✅ [PDF Export Tool] Flower borders drawn successfully`);
+        console.log(`✅ [PDF Export Tool] Flower borders drawn successfully`);
       }
 
       // Helper function to generate storybook content
       function generateStorybookContent(scenes: any[], doc: PDFKit.PDFDocument) {
-        log.info(`📖 [PDF Export Tool] Generating storybook content for ${scenes.length} scenes`);
+        console.log(`📖 [PDF Export Tool] Generating storybook content for ${scenes.length} scenes`);
 
         scenes.forEach((scene, index) => {
-          log.info(`\n📄 [PDF Export Tool] Processing scene ${index + 1} of ${scenes.length}`);
+          console.log(`\n📄 [PDF Export Tool] Processing scene ${index + 1} of ${scenes.length}`);
 
           // Draw flower borders on each page
           drawFlowerBorder(doc);
 
           // Add scene title
-          log.info(`📝 [PDF Export Tool] Adding scene title`);
+          console.log(`📝 [PDF Export Tool] Adding scene title`);
           doc.fontSize(24)
              .font('Times-Bold')
              .fillColor('#2C3E50')
@@ -267,7 +267,7 @@ export const pdfExportTool = createTool({
           // Add image if available - only use imagePath, throw error if not found
           const imagePath = scene.imagePath || scene.imageUrl;
           if (imagePath && typeof imagePath === 'string') {
-            log.info(`🖼️ [PDF Export Tool] Processing image: ${imagePath}`);
+            console.log(`🖼️ [PDF Export Tool] Processing image: ${imagePath}`);
             try {
               // Fix path resolution - use project root for all paths
               // process.cwd() might be .mastra/output, so we need to go up to the actual project root
@@ -278,29 +278,29 @@ export const pdfExportTool = createTool({
                 projectRoot = path.resolve(projectRoot, '../..');
               }
 
-              log.info(`🔍 [PDF Export Tool] Resolved project root: ${projectRoot}`);
+              console.log(`🔍 [PDF Export Tool] Resolved project root: ${projectRoot}`);
               let fullImagePath;
 
               if (imagePath.startsWith('.mastra/')) {
                 // Handle legacy .mastra paths
                 fullImagePath = path.resolve(projectRoot, imagePath);
-                log.info(`🔍 [PDF Export Tool] Resolved .mastra path: ${fullImagePath}`);
+                console.log(`🔍 [PDF Export Tool] Resolved .mastra path: ${fullImagePath}`);
               } else if (imagePath.startsWith('generated-images/')) {
                 // Handle generated-images paths
                 fullImagePath = path.resolve(projectRoot, imagePath);
-                log.info(`🔍 [PDF Export Tool] Resolved generated-images path: ${fullImagePath}`);
+                console.log(`🔍 [PDF Export Tool] Resolved generated-images path: ${fullImagePath}`);
               } else {
                 // Handle relative paths by assuming they're in generated-images
                 fullImagePath = path.resolve(projectRoot, 'generated-images', imagePath);
-                log.info(`🔍 [PDF Export Tool] Resolved relative path to generated-images: ${fullImagePath}`);
+                console.log(`🔍 [PDF Export Tool] Resolved relative path to generated-images: ${fullImagePath}`);
               }
 
-              log.info(`🔍 [PDF Export Tool] Checking if image exists: ${fullImagePath}`);
+              console.log(`🔍 [PDF Export Tool] Checking if image exists: ${fullImagePath}`);
               const imageExists = fs.existsSync(fullImagePath);
-              log.info(`🔍 [PDF Export Tool] Image exists: ${imageExists}`);
+              console.log(`🔍 [PDF Export Tool] Image exists: ${imageExists}`);
 
               if (imageExists) {
-                log.info(`✅ [PDF Export Tool] Embedding image: ${fullImagePath}`);
+                console.log(`✅ [PDF Export Tool] Embedding image: ${fullImagePath}`);
                 try {
                   // Calculate image dimensions to fit nicely on page
                   const pageWidth = doc.page.width;
@@ -309,7 +309,7 @@ export const pdfExportTool = createTool({
                   const imageX = (pageWidth - imageWidth) / 2; // Center horizontally
                   const imageY = doc.y + 20; // Add some space after title
 
-                  log.info(`📐 [PDF Export Tool] Image dimensions:`, {
+                  console.log(`📐 [PDF Export Tool] Image dimensions:`, {
                     pageWidth,
                     imageWidth,
                     imageHeight,
@@ -321,15 +321,15 @@ export const pdfExportTool = createTool({
                     width: imageWidth,
                     height: imageHeight
                   });
-                  log.info(`✅ [PDF Export Tool] Successfully embedded image: ${fullImagePath}`);
+                  console.log(`✅ [PDF Export Tool] Successfully embedded image: ${fullImagePath}`);
                 imagesEmbedded++;
 
                   // Move cursor well below the image to ensure text doesn't overlay
                   doc.y = imageY + imageHeight + 40; // Add significant space after image
                   doc.moveDown(1); // Additional spacing
-                  log.info(`📏 [PDF Export Tool] Moved cursor below image to position: ${doc.y}`);
+                  console.log(`📏 [PDF Export Tool] Moved cursor below image to position: ${doc.y}`);
                 } catch (imageError) {
-                  log.error(`❌ [PDF Export Tool] PDFKit error embedding image: ${imageError}`);
+                  console.error(`❌ [PDF Export Tool] PDFKit error embedding image: ${imageError}`);
                   doc.fontSize(14)
                      .font('Times-Italic')
                      .fillColor('#7F8C8D')
@@ -337,7 +337,7 @@ export const pdfExportTool = createTool({
                      .moveDown(0.5);
                 }
               } else {
-                log.info(`❌ [PDF Export Tool] Image file not found: ${fullImagePath}`);
+                console.log(`❌ [PDF Export Tool] Image file not found: ${fullImagePath}`);
                 doc.fontSize(14)
                    .font('Times-Italic')
                    .fillColor('#7F8C8D')
@@ -345,7 +345,7 @@ export const pdfExportTool = createTool({
                    .moveDown(0.5);
               }
             } catch (error) {
-              log.error(`❌ [PDF Export Tool] Error embedding image ${imagePath}:`, error);
+              console.error(`❌ [PDF Export Tool] Error embedding image ${imagePath}:`, error);
               doc.fontSize(14)
                  .font('Times-Italic')
                  .fillColor('#7F8C8D')
@@ -353,7 +353,7 @@ export const pdfExportTool = createTool({
                  .moveDown(0.5);
             }
           } else {
-            log.info(`⚠️ [PDF Export Tool] No image path provided for scene ${index + 1}`);
+            console.log(`⚠️ [PDF Export Tool] No image path provided for scene ${index + 1}`);
           }
 
           // Add scene description with more detailed text
@@ -361,7 +361,7 @@ export const pdfExportTool = createTool({
           const storyContent = scene.storyContent || scene.scriptContent || '';
 
           if (sceneDescription || storyContent) {
-            log.info(`📝 [PDF Export Tool] Adding detailed text for scene: ${sceneDescription.substring(0, 50)}...`);
+            console.log(`📝 [PDF Export Tool] Adding detailed text for scene: ${sceneDescription.substring(0, 50)}...`);
 
             // Use actual story content if available, otherwise fall back to generated text
             let storyText = '';
@@ -369,21 +369,21 @@ export const pdfExportTool = createTool({
             if (storyContent && storyContent.trim()) {
               // Use the actual story content from the script
               storyText = storyContent;
-              log.info(`📖 [PDF Export Tool] Using actual story content (${storyText.length} characters)`);
+              console.log(`📖 [PDF Export Tool] Using actual story content (${storyText.length} characters)`);
             } else if (sceneDescription.toLowerCase().includes('sheep') && sceneDescription.toLowerCase().includes('farm')) {
               storyText = `In the heart of a picturesque countryside, a fluffy white sheep named Daisy bounds joyfully across the rolling green hills of her beloved farm. The golden rays of the afternoon sun cast long shadows across the meadow, while wildflowers dance in the gentle breeze. Daisy's wool glistens like fresh snow as she leaps over small streams and dodges between ancient oak trees. Her playful spirit brings life to the peaceful landscape, and her soft bleating echoes across the valley, announcing her presence to the other farm animals. The scene captures the pure essence of rural tranquility and the simple joys of farm life.`;
-              log.info(`🐑 [PDF Export Tool] Generated sheep/farm story text (${storyText.length} characters)`);
+              console.log(`🐑 [PDF Export Tool] Generated sheep/farm story text (${storyText.length} characters)`);
             } else if (sceneDescription.toLowerCase().includes('cowboy') && sceneDescription.toLowerCase().includes('fighting')) {
               storyText = `Under the scorching desert sun, a rugged cowboy named Marshal Jack stands his ground against a gang of ruthless outlaws. The dusty streets of the frontier town echo with the sound of leather boots on wooden planks as the tension builds. Jack's weathered face shows years of experience, his steely eyes scanning for any sudden movement. His hand hovers near the polished grip of his trusty six-shooter, while the outlaws circle like vultures, their intentions clear. The air crackles with anticipation as the first shot rings out, shattering the silence of the wild west. This is a moment that will be remembered in the annals of frontier justice, where one man's courage faces the test of true grit and determination.`;
-              log.info(`🤠 [PDF Export Tool] Generated cowboy/fighting story text (${storyText.length} characters)`);
+              console.log(`🤠 [PDF Export Tool] Generated cowboy/fighting story text (${storyText.length} characters)`);
             } else {
               // Generic detailed text for other scenes
               storyText = `The scene unfolds with breathtaking detail, capturing every nuance of the moment. The lighting creates dramatic shadows that dance across the landscape, while the composition draws the viewer's eye through the narrative. Each element has been carefully crafted to tell a story, from the smallest details in the background to the main subjects that command attention. The atmosphere is palpable, transporting the audience into this carefully constructed world where every brushstroke and pixel serves the greater narrative. This is more than just an image—it's a window into another reality, a moment frozen in time that speaks to the heart and imagination.`;
-              log.info(`🎭 [PDF Export Tool] Generated generic story text (${storyText.length} characters)`);
+              console.log(`🎭 [PDF Export Tool] Generated generic story text (${storyText.length} characters)`);
             }
 
             // Add the detailed story text with beautiful typography - ensure it's below the image
-            log.info(`📖 [PDF Export Tool] Adding story text to PDF`);
+            console.log(`📖 [PDF Export Tool] Adding story text to PDF`);
             doc.fontSize(16)
                .font('Times-Roman')
                .fillColor('#34495E')
@@ -402,13 +402,13 @@ export const pdfExportTool = createTool({
 
           // Add new page for next scene (except for the last one)
           if (index < scenes.length - 1) {
-            log.info(`📄 [PDF Export Tool] Adding new page for next scene`);
+            console.log(`📄 [PDF Export Tool] Adding new page for next scene`);
             doc.addPage();
           }
         });
 
-        log.info(`✅ [PDF Export Tool] Storybook content generation completed`);
-        log.info(`📊 [PDF Export Tool] Summary: ${scenesProcessed} scenes processed, ${imagesEmbedded} images embedded`);
+        console.log(`✅ [PDF Export Tool] Storybook content generation completed`);
+        console.log(`📊 [PDF Export Tool] Summary: ${scenesProcessed} scenes processed, ${imagesEmbedded} images embedded`);
       }
 
       // Process storyboard data
@@ -422,7 +422,7 @@ export const pdfExportTool = createTool({
       }
 
       // Debug: Log the scenes data being processed
-      log.info(`🔍 [PDF Export Tool] Processing ${scenes.length} scenes:`, scenes.map(scene => ({
+      console.log(`🔍 [PDF Export Tool] Processing ${scenes.length} scenes:`, scenes.map(scene => ({
         sceneNumber: scene.sceneNumber,
         hasImagePath: !!scene.imagePath,
         imagePath: scene.imagePath,
@@ -430,7 +430,7 @@ export const pdfExportTool = createTool({
       })));
 
       // Debug: Log the raw storyboardData to see what we're actually receiving
-      log.info(`🔍 [PDF Export Tool] Raw storyboardData:`, JSON.stringify(context.storyboardData, null, 2));
+      console.log(`🔍 [PDF Export Tool] Raw storyboardData:`, JSON.stringify(context.storyboardData, null, 2));
 
       // Generate content
       generateStorybookContent(scenes, doc);
@@ -461,7 +461,7 @@ export const pdfExportTool = createTool({
         writeStream.on('error', reject);
       });
     } catch (error) {
-      log.error(`❌ [PDF Export Tool] An unexpected error occurred during PDF generation:`, error);
+      console.error(`❌ [PDF Export Tool] An unexpected error occurred during PDF generation:`, error);
       return Promise.reject(error);
     }
   },

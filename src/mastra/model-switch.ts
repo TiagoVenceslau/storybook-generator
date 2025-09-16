@@ -1,3 +1,5 @@
+import { LanguageModel } from "@mastra/core/llm";
+
 /**
  * Enumerates the high-level capabilities (features) supported by this project.
  *
@@ -55,7 +57,9 @@ export class ModelSwitch {
    *   }
    * }
    */
-  private static models: Record<string, Record<string, Record<string, (...args: any[]) => any>>>
+  private static models: Record<string, Record<string, Record<string, (...args: any[]) => LanguageModel>>>
+
+  static vendor: "openai" | "google" = "openai";
 
   private constructor() {
   }
@@ -86,13 +90,12 @@ export class ModelSwitch {
    *
    * @throws Error If attempting to register a duplicate feature/vendor/model.
    */
-  static register(feature: string, vendor: string, model: string, factory: (...args: any[]) => any) {
-    if (!this.models) {
+  static register(feature: string, vendor: string, model: string, factory: (...args: any[]) => LanguageModel) {
+    if (!this.models)
       this.models = {}
-    }
-    if (!this.models[feature]) {
+
+    if (!this.models[feature])
       this.models[feature] = {}
-    }
 
     if (!this.models[feature][vendor]) {}
       this.models[feature][vendor] = {}
@@ -102,6 +105,14 @@ export class ModelSwitch {
     } else {
       throw new Error(`Model for feature "${feature}" and vendor "${vendor}" already registered`)
     }
+  }
+
+  static forFeature(feature: string): LanguageModel {
+    if (!this.models || !this.models[feature] || !this.models[feature][this.vendor])
+      throw new Error(`No models registered for feature "${feature}" fo current vendor ${this.vendor}`)
+    const factory = Object.values(this.models[feature][this.vendor])[0]
+    const model = Object.keys(this.models[feature][this.vendor])[0]
+    return factory(model)
   }
 
   /**

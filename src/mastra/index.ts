@@ -1,4 +1,8 @@
 import { Features, ModelSwitch } from "./model-switch";
+import 'dotenv/config'; // Load .env early
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { Mastra } from '@mastra/core';
 import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
@@ -23,10 +27,10 @@ ModelSwitch.register(Features.EXPORT, "openai", "gtp-4.1", openai)
 ModelSwitch.register(Features.EXPORT, "google", "gemini-2.5-flash", google)
 ModelSwitch.register(Features.VISUAL_GEN, "openai", "gpt-image-1", openai)
 ModelSwitch.register(Features.VISUAL_GEN, "google", "imagen-3.0-generate-002", google)
+ModelSwitch.register(Features.EVAL_CONSISTENCY, "openai", "gpt-4o", openai)
+ModelSwitch.register(Features.EVAL_CONSISTENCY, "google", "gemini-2.5-flash", google)
 
-
-console.log(`Using AIVendor ${ModelSwitch.vendor}`);
-console.log(`With apiKey ${process.env.AI_VENDOR_API_KEY || 'not set'}`);
+console.log(`API key for OpenAI: ${process.env["OPENAI_API_KEY"] ? 'set' : 'not set'}`);
 
 // Create shared storage for all memory instances
 const sharedStorage = new LibSQLStore({
@@ -58,21 +62,6 @@ export const mastra = new Mastra({
     }
   },
   bundler: {
-    // transpilePackages: ["shared"],
-    // externals: [
-    //   "reflect-metadata",
-    //   "@decaf-ts/logging",
-    //   "@decaf-ts/utils",
-    //   "@decaf-ts/reflection",
-    //   "@decaf-ts/decorator-validation",
-    //   "@decaf-ts/db-decorators",
-    //   "@decaf-ts/injectable-decorators",
-    //   "@decaf-ts/transactional-decorators",
-    //   "@decaf-ts/core",
-    //   "@decaf-ts/for-type-orm",
-    //   "@decaf-ts/ui-decorators",
-    //   "shared",
-    // ],
     sourcemap: true,
   },
   storage: sharedStorage, // Enable shared storage for memory

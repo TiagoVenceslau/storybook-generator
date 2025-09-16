@@ -3,6 +3,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
+import { Features, ModelSwitch } from "../model-switch";
 
 /**
  * Character and Environment Consistency Evaluation Result
@@ -215,7 +216,7 @@ Grading rubric (for both characters and environment):
   const startTime = Date.now();
 
   const result = await generateObject({
-    model: openai('gpt-4o-mini') as any,
+    model: ModelSwitch.forFeature(Features.EVAL_CONSISTENCY) as any,
     messages: [
       {
         role: 'user',

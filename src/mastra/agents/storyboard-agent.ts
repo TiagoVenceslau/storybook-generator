@@ -90,7 +90,7 @@ Return only the JSON object.`,
       characterConsistency: storyboardSpecificEvals.characterConsistency,
       narrativeFlow: storyboardSpecificEvals.narrativeFlow,
       // Character visual consistency scorer (shows up in Scorers tab)
-      characterVisualConsistency: characterVisualConsistencyLLMScorer,
+      characterVisualConsistency: characterVisualConsistencyLLMScorer(),
     },
   });
   return agent;

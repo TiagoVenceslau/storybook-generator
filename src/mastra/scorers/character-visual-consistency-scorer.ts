@@ -1,11 +1,11 @@
 import { Metric, type MetricResult } from '@mastra/core';
 import { MastraAgentJudge } from '@mastra/evals/judge';
 import { type LanguageModel } from '@mastra/core/llm';
-import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
 import { Logging, Logger } from "@decaf-ts/logging";
+import { Features, ModelSwitch } from "../model-switch";
 
 const INSTRUCTIONS = `You are an expert visual consistency judge for storyboards. You analyze actual generated images to evaluate whether character depictions remain visually consistent across multiple scenes.`;
 
@@ -347,6 +347,6 @@ export class CharacterVisualConsistencyLLMMetric extends Metric {
 }
 
 // Export a default instance using gpt-4o-mini (vision-capable model)
-export const characterVisualConsistencyLLMScorer = new CharacterVisualConsistencyLLMMetric(openai('gpt-4o-mini'));
+export const characterVisualConsistencyLLMScorer = () => new CharacterVisualConsistencyLLMMetric(ModelSwitch.forFeature(Features.EVAL_CONSISTENCY));
 
 

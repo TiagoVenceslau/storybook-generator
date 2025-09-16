@@ -17,6 +17,7 @@ export enum Features {
   SCRIPT_GEN = "script-gen",
   STORYBOARD_GEN = "storyboard-gen",
   NETWORK = "network",
+  EVAL_CONSISTENCY = "ev-consistency",
 }
 
 /**

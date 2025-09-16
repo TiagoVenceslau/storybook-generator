@@ -3,12 +3,6 @@ import { z } from 'zod';
 import PDFDocument from 'pdfkit';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-// Get current directory for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 export const pdfExportTool = createTool({
   id: 'exportToPdf',
   description: 'Export storyboard data to a beautiful PDF with embedded images and decorative borders',

@@ -31,13 +31,48 @@ run `npm run dev` to start the dev server.
 
 go to `localhost:8080`. this is a dev dashboard for the platform;
 
-You can talk to each agent individually by going to the agents menu
+full mode:
+- Fill the details for the workflow. It's already preconfigured for coloring books. Just fill in you story idea. It is hardcoded to only create 5 images!
 
-or run the full end to end workflow by going to the workflows menu.
+- (Option 2 - more opaque. in the workflow you can at least see the timer moving) - go to the network menu and ask the agent the story you want it to create (same 5 image restriction applies).
 
-Accepted options:
+You can talk to each agent individually:
+ - script agent;
+ - storyboard agent;
+ - image generation agent;
+ - export agent (not much to talk with this one)
 
+Accepted styles:
+'Cinematic'
+'Photographic'
+'Anime'
+'Manga'
+'Ghibli'
+'Disney'
+'Coloring Book'
+'Line Art'
+'Comic Book'
+'Graphic Novel'
+'Watercolor'
+'Low Poly'
+'Pixel Art'
+'Steampunk'
+'Cyberpunk'
+'Fantasy Art'
+'Film Noir'
+'Photorealistic'
 
+Accepted themes:
+'Fantasy'
+'Sci-Fi'
+'Horror'
+'Romance'
+'Thriller'
+'Mystery'
+'Adventure'
+'Drama'
+'Comedy'
+'child'
 
 
 

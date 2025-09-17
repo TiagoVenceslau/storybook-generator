@@ -110,7 +110,7 @@ Return a complete JSON object with the storyboard data, where each scene include
     },
     memory: createAgentMemory(),
     evals: {
-      imageCharacterConsistencyLLM: characterVisualConsistencyLLMScorer,
+      imageCharacterConsistencyLLM: characterVisualConsistencyLLMScorer(),
     },
   });
   return agent;

@@ -497,7 +497,7 @@ const evaluateConsistencyStep = createStep({
       console.log(`📊 [Consistency Evaluation] Running scorer on ${inputData.scenesWithImages.length} scenes`);
 
       // Run the character consistency scorer
-      const evaluationResult = await characterVisualConsistencyLLMScorer.measure(
+      const evaluationResult = await characterVisualConsistencyLLMScorer().measure(
         `Storyboard for: ${inputData.title}`, // Use title as story idea
         storyboardJson
       );
@@ -550,11 +550,15 @@ export const automatedAgentNetworkWorkflow = createWorkflow({
   id: 'automated-agent-network',
   description: 'Complete pipeline from story idea to PDF with all agents working sequentially',
   inputSchema: z.object({
-    storyIdea: z.string().describe('The initial story idea or concept'),
-    style: z.string().default('Cinematic').describe('Visual style for image generation'),
-    title: z.string().optional().describe('Title for the story'),
-    genre: z.string().optional().describe('Genre of the story'),
-    tone: z.string().optional().describe('Tone of the story'),
+    storyIdea: z.string().default(`Harry, a little blue eyed boy, capable of talking to animals for some magic reason
+     and dressed in a shirt and overalls goes walking though the the lush woods.
+     On his shoulder goes his friend Luna, an unusually large blue spotted raven.
+     As they're walking, they see a pink rabbit try to pick up a carrot, buried in the ground.
+     That carrot turns out to be a Mole's tail,  and while she is initially shocked, they all laugh and become friends`).describe('The initial story idea or concept'),
+    style: z.string().default('Coloring Book').describe('Visual style for image generation'),
+    title: z.string().default("Even a mistake can make a friend").optional().describe('Title for the story'),
+    genre: z.string().default("child").optional().describe('Genre of the story'),
+    tone: z.string().default("playful, cheerful").optional().describe('Tone of the story'),
   }),
   outputSchema: z.object({
     script: z.string().describe('Generated screenplay'),
@@ -601,22 +605,10 @@ export const automatedAgentNetworkWorkflow = createWorkflow({
   }),
   steps: [generateScriptStep, convertToStoryboardStep, generateImagesStep, exportToPdfStep, evaluateConsistencyStep],
 })
-  .then(generateScriptStep)
+  .then(generateScriptStep as any)
   .then(convertToStoryboardStep)
   .then(generateImagesStep)
   .parallel([exportToPdfStep, evaluateConsistencyStep]) // Run PDF export and evaluation in parallel
-  .map(async ({ inputData, getStepResult }) => {
-    // Combine results from parallel steps
-    const pdfResult = getStepResult(exportToPdfStep);
-    const evaluationResult = getStepResult(evaluateConsistencyStep);
-
-    return {
-      pdfPath: pdfResult.pdfPath,
-      title: pdfResult.title,
-      summary: pdfResult.summary,
-      consistencyEvaluation: evaluationResult.consistencyEvaluation,
-    };
-  })
   .commit();
 
 // Helper function to run the automated workflow

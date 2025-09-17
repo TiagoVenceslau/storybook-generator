@@ -3,6 +3,9 @@ import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
 import path from 'path';
 import fs from 'fs';
+import { ModelSwitch } from "../model-switch";
+import { createOpenAI } from "@ai-sdk/openai";
+import { experimental_generateImage as generateImage } from 'ai';
 
 // Style prompts for different visual styles
 const stylePrompts: { [key: string]: { prefix: string; suffix: string } } = {
@@ -97,55 +100,116 @@ export async function generateSceneImage(prompt: string, style: string): Promise
   });
   console.log(`📝 [Image Generation] Full prompt: ${fullPrompt.substring(0, 100)}...`);
 
-  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!apiKey) {
-    console.error('❌ [Image Generation] GOOGLE_GENERATIVE_AI_API_KEY not found in environment variables');
-    throw new Error('GOOGLE_GENERATIVE_AI_API_KEY not found in environment variables');
-  }
-
   console.log('🔑 [Image Generation] API key found, initializing Google GenAI...');
 
-  const ai = new GoogleGenAI({ apiKey });
-  console.log('🤖 [Image Generation] Google GenAI initialized successfully');
-
-  console.log('🚀 [Image Generation] Calling Google Imagen API...');
-  const startTime = Date.now();
-
-  try {
-    const response = await ai.models.generateImages({
-      model: 'imagen-3.0-generate-002',
-      prompt: fullPrompt,
-      config: { numberOfImages: 1, outputMimeType: 'image/jpeg' },
-    });
-
-    const generationTime = Date.now() - startTime;
-    console.log(`✅ [Image Generation] API call completed in ${generationTime}ms`);
-
-    if (response.generatedImages && response.generatedImages.length > 0) {
-      console.log(`🖼️ [Image Generation] Received ${response.generatedImages.length} generated images`);
-
-      const image = response.generatedImages[0].image;
-      if (!image || !image.imageBytes) {
-        console.error('❌ [Image Generation] Image generation failed to return valid image data');
-        throw new Error("Image generation failed to return valid image data.");
+  switch (ModelSwitch.vendor){
+    case 'google': {
+      const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+      if (!apiKey) {
+        console.error('❌ [Image Generation] GOOGLE_GENERATIVE_AI_API_KEY not found in environment variables');
+        throw new Error('GOOGLE_GENERATIVE_AI_API_KEY not found in environment variables');
       }
 
-      const base64ImageBytes: string = image.imageBytes;
-      console.log(`📊 [Image Generation] Image data size: ${base64ImageBytes.length} characters`);
-      console.log(`✅ [Image Generation] Successfully generated image with style: ${style}`);
+      const ai = new GoogleGenAI({ apiKey });
+      console.log('🤖 [Image Generation] Google GenAI initialized successfully');
 
-      return `data:image/jpeg;base64,${base64ImageBytes}`;
-    } else {
-      console.error('❌ [Image Generation] Image generation failed to return an image');
-      throw new Error("Image generation failed to return an image.");
+      console.log('🚀 [Image Generation] Calling Google Imagen API...');
+      const startTime = Date.now();
+
+      try {
+        const response = await ai.models.generateImages({
+          model: 'imagen-3.0-generate-002',
+          prompt: fullPrompt,
+          config: { numberOfImages: 1, outputMimeType: 'image/jpeg' },
+        });
+
+        const generationTime = Date.now() - startTime;
+        console.log(`✅ [Image Generation] API call completed in ${generationTime}ms`);
+
+        if (response.generatedImages && response.generatedImages.length > 0) {
+          console.log(`🖼️ [Image Generation] Received ${response.generatedImages.length} generated images`);
+
+          const image = response.generatedImages[0].image;
+          if (!image || !image.imageBytes) {
+            console.error('❌ [Image Generation] Image generation failed to return valid image data');
+            throw new Error("Image generation failed to return valid image data.");
+          }
+
+          const base64ImageBytes: string = image.imageBytes;
+          console.log(`📊 [Image Generation] Image data size: ${base64ImageBytes.length} characters`);
+          console.log(`✅ [Image Generation] Successfully generated image with style: ${style}`);
+
+          return `data:image/jpeg;base64,${base64ImageBytes}`;
+        } else {
+          console.error('❌ [Image Generation] Image generation failed to return an image');
+          throw new Error("Image generation failed to return an image.");
+        }
+      } catch (error) {
+        console.error('❌ [Image Generation] Error during API call:', error);
+        throw error;
+      }
     }
-  } catch (error) {
-    console.error('❌ [Image Generation] Error during API call:', error);
-    throw error;
+    case "openai": {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        console.error('❌ [Image Generation] OPENAI_AKI_KEY not found in environment variables');
+        throw new Error('OPENAI_AKI_KEY not found in environment variables');
+      }
+
+      // Initialize provider
+      const openai = createOpenAI({ apiKey });
+
+      console.log('🤖 [Image Generation] OpenAI provider initialized successfully');
+
+      console.log('🚀 [Image Generation] Calling OpenAI Images API...');
+      const startTime = Date.now();
+
+      try {
+
+        // Generate exactly one image (AI SDK will batch if needed)
+        const result = await generateImage({
+          model: openai.image('gpt-image-1') as any,
+          prompt: fullPrompt,
+          n: 1,
+          size: "1024x1024",
+          providerOptions: {
+            openai: {
+              // style: 'vivid' | 'natural'
+              style: "vivid",
+              // quality: 'hd' uses higher-quality generation when available
+              quality: 'hd',
+            },
+          },
+        });
+
+        const generationTime = Date.now() - startTime;
+        console.log(`✅ [Image Generation] API call completed in ${generationTime}ms`);
+
+        // AI SDK returns { image } when n=1, or { images } when n>1 — handle both safely
+        const img = (result as any).image ?? (result as any).images?.[0];
+
+        if (!img || !img.base64) {
+          console.error('❌ [Image Generation] Image generation failed to return valid image data');
+          throw new Error('Image generation failed to return valid image data.');
+        }
+
+        const base64 = img.base64 as string; // raw base64 (no data URL prefix)
+        console.log(`🖼️ [Image Generation] Received 1 generated image`);
+        console.log(`📊 [Image Generation] Image data size: ${base64.length} characters`);
+        console.log(`✅ [Image Generation] Successfully generated image with style: ${style}`);
+
+        // OpenAI returns PNG by default from the Images API
+        return `data:image/png;base64,${base64}`;
+      } catch (error) {
+        console.error('❌ [Image Generation] Error during API call:', error);
+        throw error;
+      }
+    }
+    default:
+      throw new Error(`Unsupported vendor: ${ModelSwitch.vendor}`)
   }
 }
 
-// Helper function to save image locally
 async function saveImageLocally(imageData: string, filename: string): Promise<string> {
   console.log('💾 [Image Save] Starting local image save process...');
   console.log(`📁 [Image Save] Filename: ${filename}`);

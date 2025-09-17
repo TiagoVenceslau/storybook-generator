@@ -15,15 +15,15 @@ import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { automatedAgentNetworkWorkflow } from "./workflows/agent-network-automated-workflow";
 
-ModelSwitch.register(Features.NETWORK, "openai", "gtp-4.1", openai)
+ModelSwitch.register(Features.NETWORK, "openai", "gpt-5", openai)
 ModelSwitch.register(Features.NETWORK, "google", "gemini-2.5-flash", google)
-ModelSwitch.register(Features.SCRIPT_GEN, "openai", "gtp-4.1", openai)
+ModelSwitch.register(Features.SCRIPT_GEN, "openai", "gpt-5", openai)
 ModelSwitch.register(Features.SCRIPT_GEN, "google", "gemini-2.5-flash", google)
-ModelSwitch.register(Features.STORYBOARD_GEN, "openai", "gtp-4.1", openai)
+ModelSwitch.register(Features.STORYBOARD_GEN, "openai", "gpt-5", openai)
 ModelSwitch.register(Features.STORYBOARD_GEN, "google", "gemini-2.5-flash", google)
-ModelSwitch.register(Features.IMAGE_GEN, "openai", "gtp-4.1", openai)
+ModelSwitch.register(Features.IMAGE_GEN, "openai", "gpt-5", openai)
 ModelSwitch.register(Features.IMAGE_GEN, "google", "gemini-2.5-flash", google)
-ModelSwitch.register(Features.EXPORT, "openai", "gtp-4.1", openai)
+ModelSwitch.register(Features.EXPORT, "openai", "gpt-5", openai)
 ModelSwitch.register(Features.EXPORT, "google", "gemini-2.5-flash", google)
 ModelSwitch.register(Features.VISUAL_GEN, "openai", "gpt-image-1", openai)
 ModelSwitch.register(Features.VISUAL_GEN, "google", "imagen-3.0-generate-002", google)
@@ -40,7 +40,7 @@ const sharedStorage = new LibSQLStore({
 export const mastra = new Mastra({
   agents: {
     scriptGeneratorAgent: scriptGeneratorAgent(),
-    storyBoardAgent: storyboardAgent(),
+    storyboardAgent: storyboardAgent(),
     imageGeneratorAgent: imageGeneratorAgent(),
     exportAgent: exportAgent(),
   },

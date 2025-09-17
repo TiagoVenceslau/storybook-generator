@@ -136,13 +136,13 @@ export const storyboardNetwork = () => {
     name: 'AI Storyboard Generator Network',
     agents: {
       scriptGeneratorAgent: scriptGeneratorAgent(),
-      storyBoardAgent: storyboardAgent(),
+      storyboardAgent: storyboardAgent(),
       imageGeneratorAgent: imageGeneratorAgent(),
       exportAgent: exportAgent(),
     },
     model: ModelSwitch.forFeature(Features.NETWORK) as any,
     memory: networkMemory, // Use full memory capabilities with working memory
-    instructions: `You are a comprehensive storyboard generation system with FULL CAPABILITIES for creating complete storyboards from story ideas. You can generate images, create PDFs, and upload to Google Drive.
+    instructions: `You are a comprehensive storyboard generation system with FULL CAPABILITIES for creating complete storyboards from story ideas. You can generate images and create PDFs.
 
 ## Context Management
 - Keep agent interactions concise and focused

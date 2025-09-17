@@ -431,7 +431,8 @@ export class GenreAlignmentMetric {
         'fantasy': ['magic', 'wizard', 'dragon', 'spell', 'enchanted', 'mythical', 'supernatural'],
         'horror': ['scary', 'fear', 'dark', 'monster', 'terrifying', 'nightmare', 'creepy'],
         'romance': ['love', 'romance', 'relationship', 'heart', 'passion', 'affection'],
-        'sci-fi': ['technology', 'future', 'space', 'robot', 'alien', 'scientific', 'advanced']
+        'sci-fi': ['technology', 'future', 'space', 'robot', 'alien', 'scientific', 'advanced'],
+        'child': ['funny', 'cute', 'cuddly', 'educational', 'playful', 'friend', 'children', 'affection', 'learning'],
       };
 
       const keywords = genreKeywords[genre as keyof typeof genreKeywords] || [];

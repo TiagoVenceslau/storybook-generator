@@ -1,6 +1,7 @@
 /lib
 /dist
 /docs
+/generated-exports
 /workdocs/coverage
 /workdocs/drawings/*
 /workdocs/uml/*

@@ -6,6 +6,7 @@ import fs from 'fs';
 import { ModelSwitch } from "../model-switch";
 import { createOpenAI } from "@ai-sdk/openai";
 import { experimental_generateImage as generateImage } from 'ai';
+import { OpenAI } from "openai";
 
 // Style prompts for different visual styles
 const stylePrompts: { [key: string]: { prefix: string; suffix: string } } = {
@@ -157,7 +158,7 @@ export async function generateSceneImage(prompt: string, style: string): Promise
       }
 
       // Initialize provider
-      const openai = createOpenAI({ apiKey });
+      const openai = new OpenAI({ apiKey });
 
       console.log('🤖 [Image Generation] OpenAI provider initialized successfully');
 
@@ -167,38 +168,30 @@ export async function generateSceneImage(prompt: string, style: string): Promise
       try {
 
         // Generate exactly one image (AI SDK will batch if needed)
-        const result = await generateImage({
-          model: openai.image('gpt-image-1') as any,
+        const result = await openai.images.generate({
+          model: 'gpt-image-1',
           prompt: fullPrompt,
           n: 1,
           size: "1024x1024",
-          providerOptions: {
-            openai: {
-              // style: 'vivid' | 'natural'
-              style: "vivid",
-              // quality: 'hd' uses higher-quality generation when available
-              quality: 'hd',
-            },
-          },
+          // style: "vivid",
+          quality: 'medium',
+          output_format: "png"
         });
 
         const generationTime = Date.now() - startTime;
         console.log(`✅ [Image Generation] API call completed in ${generationTime}ms`);
 
-        // AI SDK returns { image } when n=1, or { images } when n>1 — handle both safely
-        const img = (result as any).image ?? (result as any).images?.[0];
-
-        if (!img || !img.base64) {
-          console.error('❌ [Image Generation] Image generation failed to return valid image data');
-          throw new Error('Image generation failed to return valid image data.');
+        if (!result.data?.length || !result.data[0].b64_json) {
+          console.error("❌ [Image Generation] No image data returned");
+          throw new Error("Image generation failed: empty response");
         }
 
-        const base64 = img.base64 as string; // raw base64 (no data URL prefix)
-        console.log(`🖼️ [Image Generation] Received 1 generated image`);
+        const base64 = result.data[0].b64_json;
+        console.log("🖼️ [Image Generation] Received 1 generated image");
         console.log(`📊 [Image Generation] Image data size: ${base64.length} characters`);
         console.log(`✅ [Image Generation] Successfully generated image with style: ${style}`);
 
-        // OpenAI returns PNG by default from the Images API
+        // OpenAI returns PNG by default
         return `data:image/png;base64,${base64}`;
       } catch (error) {
         console.error('❌ [Image Generation] Error during API call:', error);
@@ -237,7 +230,7 @@ async function saveImageLocally(imageData: string, filename: string): Promise<st
     console.log(`📊 [Image Save] Buffer size: ${buffer.length} bytes`);
 
     // Save to generated-images directory at project root
-    const projectRoot = path.resolve(process.cwd(), '../../..');
+    const projectRoot = path.resolve(process.cwd(), "../../");
     const outputDir = path.join(projectRoot, 'generated-images');
     console.log(`📁 [Image Save] Project root: ${projectRoot}`);
     console.log(`📁 [Image Save] Output directory: ${outputDir}`);

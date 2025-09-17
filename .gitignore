@@ -2,6 +2,7 @@
 /dist
 /docs
 /generated-exports
+/generated-images
 /workdocs/coverage
 /workdocs/drawings/*
 /workdocs/uml/*

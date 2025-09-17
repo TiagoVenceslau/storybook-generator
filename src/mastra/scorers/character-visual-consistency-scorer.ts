@@ -16,7 +16,7 @@ function imageFileToDataUri(imagePath: string): string {
 
   try {
     // Resolve project root (same logic as PDF export tool)
-    let projectRoot = path.resolve(process.cwd());
+    let projectRoot = path.resolve(path.join(process.cwd(), "../.."));
 
     // If we're in .mastra/output, go up to the actual project root
     if (projectRoot.includes('.mastra/output')) {

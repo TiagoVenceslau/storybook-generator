@@ -81,13 +81,26 @@ Rating should be returned as JSON: {
           content: [
             { type: "text", text: `Evaluate how closely this matches style: ${style}` },
             // @ts-ignore
-            { type: "image_url", image_url: `data:image/${format};base64,` + image.toString("base64") },
+            { type: "image_url", image_url: {url:`data:image/${format};base64,` + image.toString("base64") }},
+            ...(references  && references.length ? [
+              {type: "text", text: "\n## Reference images\n"},
+              ...references.map((r,i) => {
+                return [
+                  {type: "text", text: `\n### reference image ${i}\n`},
+                  { type: "image_url", image_url: {user:`data:image/${format};base64,` + r.toString("base64") }},
+                ]
+              }).flat()
+            ] : [])
           ],
         },
       ],
-    });
+    } as any);
 
-    const parsed = JSON.parse(res.choices[0].message.content ?? "{}");
-    return parsed;
+    try  {
+      const json = JSON.parse(res.choices[0].message.content || "{}");
+      return json;
+    } catch (e: unknown) {
+      throw new Error("Unable to deserialize response")
+    }
   }
 });

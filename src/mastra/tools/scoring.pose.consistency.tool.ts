@@ -10,7 +10,7 @@ export const PoseConsistencyScorer = new Tool({
   id: "pose-consistency-scoring-tool",
   description: "Scores how consistent a character's pose is across generated images.",
   inputSchema: z.object({
-    description: z.string().describe("the textual description of the character's pose"),
+    pose: z.string().describe("the textual description of the character's pose"),
     image: z.instanceof(Buffer).describe("The buffer for the image to be scored"),
     format: z.enum(Object.values(OpenAIImageFormats) as any).describe("the image format"),
     threshold: z.number().max(1).min(0).default(0.95).describe("The threshold for acceptance"),
@@ -18,7 +18,7 @@ export const PoseConsistencyScorer = new Tool({
   }),
   outputSchema: z.record(z.string(), Score).describe("a record of all defects and their scores"),
   execute: async ({context}) => {
-    const { image, description, references, format, threshold } = context;
+    const { image, pose, references, format, threshold } = context;
     const res = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -86,28 +86,31 @@ all ratings should be returned as JSON: {
           content: [
             { type: "text", text: `            
 ## Character Pose description
-${description}
+${pose}
 
 ## Image to evaluate
-
 `},
     // @ts-ignore
-            { type: "image_url", image_url: `data:image/${format};base64,` + image.toString("base64") },
-            // ...(references  && references.length ? [
-            //   {type: "text", text: "\n## References images\n"},
-            //   ...references.map((r,i) => {
-            //     return [
-            //       {type: "text", text: `\n### reference image ${i}\n`},
-            //       { type: "image_url", image_url: "data:image/png;base64," + r.toString("base64") },
-            //     ]
-            //   }).flat()
-            // ] : [])
+            { type: "image_url", image_url: {url:`data:image/${format};base64,` + image.toString("base64") }},
+            ...(references  && references.length ? [
+              {type: "text", text: "\n## Reference images\n"},
+              ...references.map((r,i) => {
+                return [
+                  {type: "text", text: `\n### reference image ${i}\n`},
+                  { type: "image_url", image_url: {user:`data:image/${format};base64,` + r.toString("base64") }},
+                ]
+              }).flat()
+            ] : [])
           ],
         },
       ],
-    });
+    } as any);
 
-    const parsed = JSON.parse(res.choices[0].message.content || "{}");
-    return parsed;
+    try  {
+      const json = JSON.parse(res.choices[0].message.content || "{}");
+      return json;
+    } catch (e: unknown) {
+      throw new Error("Unable to deserialize response")
+    }
   }
 });

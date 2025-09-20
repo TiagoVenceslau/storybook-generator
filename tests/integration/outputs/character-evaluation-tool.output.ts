@@ -1,4 +1,4 @@
-export const CharacterEvaluationToolOutput = {
+export const CharacterEvaluationToolOutput= {
   "facial": {
     "score": 0.85,
     "reasons": [

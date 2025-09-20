@@ -1,23 +1,35 @@
+
 export const StyleEvaluationToolOutput = {
-  "score": 0.85,
-  "reasons": [
-    {
-      "reason": "The lighting conditions lack the typical shadowing and contrast found in dark detective graphic novels, making it appear less moody and atmospheric.",
-      "bbox": {
-        "x": 0,
-        "y": 0,
-        "h": 1024,
-        "w": 1024
+  "style": {
+    "score": 0.75,
+    "reasons": [
+      {
+        "reason": "The line weight is thicker than typical for graphic novels, where lines are usually finer and crisper.",
+        "bbox": {
+          "x": 100,
+          "y": 100,
+          "h": 500,
+          "w": 400
+        }
+      },
+      {
+        "reason": "The shading is softer and more gradient-like, whereas graphic novels often use high contrast shading.",
+        "bbox": {
+          "x": 150,
+          "y": 150,
+          "h": 400,
+          "w": 300
+        }
+      },
+      {
+        "reason": "The color palette is muted but lacks the typical deep shadows and dramatic lighting of dark detective stories.",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "h": 768,
+          "w": 1152
+        }
       }
-    },
-    {
-      "reason": "The color palette is slightly washed out compared to the rich, darker hues typical of the style.",
-      "bbox": {
-        "x": 0,
-        "y": 512,
-        "h": 512,
-        "w": 512
-      }
-    }
-  ]
+    ]
+  }
 }

@@ -10,8 +10,6 @@ export const metricAggregationStep = createStep({
       metric: z.enum(["pose", "character", "style"]).describe("metric used"),
       score: Score,
     })),
-    currentIteration: z.number().default(1).describe("the current iteration"),
-    maxIterations: z.number().default(5).describe("the maximum cumulative number of iterations for regens or fixes"),
     regenThreshold: z.number().max(1).min(0).default(0.60).describe("threshold to completely redo image"),
     fixThreshold: z.number().max(1).min(0).default(0.95).describe("the threshold to fix image details"),
   }),
@@ -21,21 +19,22 @@ export const metricAggregationStep = createStep({
     reason: z.string().optional().describe("reason for a full regen of image")
   }),
   execute: async ({ inputData }) => {
-    const {fixThreshold, regenThreshold, currentIteration, maxIterations, metrics} = inputData;
-    const forRegen = metrics.filter(m => m.score.score < regenThreshold);
+    const {fixThreshold, regenThreshold, metrics} = inputData;
+    let flatMetrics = metrics.map((m) => {
+      return Object.entries(m).map(([k, v]) => Object.assign(v, {metric: k}));
+    }).flat();
+    const forRegen = flatMetrics.filter(m => (m as z.infer<typeof Score>).score < regenThreshold);
 
     if (forRegen.length) {
-      if (currentIteration > maxIterations)
-        return {action: "give-up" as any}
-      return {action: "redo" as any, reason: forRegen.map(r => r.score.reasons).flat().join(".\n")}
+      return {action: "redo" as any, reason: forRegen.map(r => (r as z.infer<typeof Score>).reasons).flat().join(".\n")}
     }
 
-    const toFix = metrics.filter(m => m.score.score < fixThreshold);
+    const toFix = flatMetrics.filter(m => (m as z.infer<typeof Score>).score < fixThreshold);
     if (!toFix.length)
       return {action: "proceed" as any}
     return {
       action: "fix" as any,
-      fixes: toFix.map(f => f.score.reasons).flat() as z.infer<typeof ScoreReason>[]
+      fixes: toFix.map(f => (f as z.infer<typeof Score>).reasons).flat() as z.infer<typeof ScoreReason>[]
     }
   }
 })

@@ -1,3 +1,4 @@
+
 export const PoseEvaluationToolOutput = {
   "body": {
     "score": 0.95

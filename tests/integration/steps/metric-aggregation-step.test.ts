@@ -3,14 +3,14 @@ dotev.config();
 import { Mastra, Run, Workflow } from "@mastra/core";
 import { createWorkflow } from "@mastra/core/workflows";
 import { getMastraForTest, setTestFsBasePath } from "../mastra";
-import { AliceDefault } from "../characters";
+import { AliceDefault, Character } from "../characters";
+import { metricAggregationStep } from "../../../src/mastra/workflows/character/metric-aggregation.step";
+import { z } from "zod";
+import { CharacterEvaluationToolOutput } from "../outputs/character-evaluation-tool.output";
+import { PoseEvaluationToolOutput } from "../outputs/pose-evaluation-tool.output";
+import { StyleEvaluationToolOutput } from "../outputs/style-evaluation-tool.output";
 
 setTestFsBasePath()
-
-import { characterEvaluationStep } from "../../../src/mastra/workflows/character/character-evaluation.step";
-import { AliceCharacterEnrichmentStepOutput } from "../outputs/character-enrichment-step.output";
-import { AliceDefaultCharacterCreationStepOutput } from "../outputs/character-creation-step.output";
-import { metricAggregationStep } from "../../../src/mastra/workflows/character/metric-aggregation.step";
 
 const step = metricAggregationStep;
 const stepName = step.id;
@@ -38,35 +38,22 @@ describe(`${stepName} test`, () => {
 
   beforeEach(async () => {
     run = await wf.createRunAsync({runId: expect.getState().currentTestName, disableScorers: !!(includeScoring)});
-  });
+  })
 
-  ["character", "pose", "style"].forEach((metric: string) => {
-    it(`should run ${metric} metric ${stepName}`, async () => {
-
-      const character = AliceCharacterEnrichmentStepOutput
-      const image = AliceDefaultCharacterCreationStepOutput;
-
-      const response = await run.start({
-        inputData: Object.assign({}, AliceDefault, {
-          project: stepName,
-          metric: metric,
-          imageUrl: image.images[0].imageUrl,
-          description: character.description,
-          characteristics: character.characteristics,
-          situational: character.situational,
-          pose: image.pose,
-          mood: "",
-          threshold: 0.9,
-          style: image.style,
-        }),
-      })
-
-      expect(response.status).toBe("success")
-      const steps = response.steps
-      const result = (steps[step.id] as any).output;
-
-      expect(result).toBeDefined();
-
+  it(`should run ${stepName}`, async () => {
+    const input: z.infer<typeof step.inputSchema> = {
+      metrics: [CharacterEvaluationToolOutput, PoseEvaluationToolOutput, StyleEvaluationToolOutput] as any[],
+      regenThreshold: 0.7,
+      fixThreshold: 0.9
+    }
+    const response = await run.start({
+      inputData: input,
     })
+
+    expect(response.status).toBe("success")
+    const steps = response.steps
+    const result = (steps[step.id] as any).output;
+
+    expect(result).toBeDefined();
   })
 })

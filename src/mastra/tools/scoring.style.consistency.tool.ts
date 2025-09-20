@@ -16,7 +16,9 @@ export const StyleConsistencyScorer = new Tool({
     format: z.enum(Object.values(OpenAIImageFormats) as any).describe("the image format"),
     references: z.array(z.instanceof(Buffer)).optional().describe("reference images to evaluate against")
   }),
-  outputSchema: Score,
+  outputSchema: z.object({
+      style: Score
+  }),
   execute: async ({context}) => {
     const { image, style, references, threshold, format } = context;
 
@@ -98,7 +100,9 @@ Rating should be returned as JSON: {
 
     try  {
       const json = JSON.parse(res.choices[0].message.content || "{}");
-      return json;
+      return {
+        style: json
+      };
     } catch (e: unknown) {
       throw new Error("Unable to deserialize response")
     }

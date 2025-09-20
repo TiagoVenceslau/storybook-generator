@@ -1,6 +1,8 @@
 import { Tool, ToolExecutionContext } from "@mastra/core";
 import OpenAI from "openai";
 import {z} from "zod"
+import { Score } from "./types";
+import { OpenAIImageFormats } from "../constants";
 
 const client = new OpenAI();
 
@@ -10,12 +12,13 @@ export const PoseConsistencyScorer = new Tool({
   inputSchema: z.object({
     description: z.string().describe("the textual description of the character's pose"),
     image: z.instanceof(Buffer).describe("The buffer for the image to be scored"),
+    format: z.enum(Object.values(OpenAIImageFormats) as any).describe("the image format"),
     threshold: z.number().max(1).min(0).default(0.95).describe("The threshold for acceptance"),
     references: z.array(z.instanceof(Buffer)).optional().describe("reference images to evaluate against")
   }),
-  outputSchema: undefined,
+  outputSchema: z.record(z.string(), Score).describe("a record of all defects and their scores"),
   execute: async ({context}) => {
-    const { image, description, references, threshold } = context;
+    const { image, description, references, format, threshold } = context;
     const res = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -89,7 +92,7 @@ ${description}
 
 `},
     // @ts-ignore
-            { type: "image_url", image_url: "data:image/png;base64," + image.toString("base64") },
+            { type: "image_url", image_url: `data:image/${format};base64,` + image.toString("base64") },
             // ...(references  && references.length ? [
             //   {type: "text", text: "\n## References images\n"},
             //   ...references.map((r,i) => {

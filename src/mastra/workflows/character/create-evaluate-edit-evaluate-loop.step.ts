@@ -23,7 +23,7 @@ export const characterGenerationAndRefinementStep = createStep({
     images: z.array(ImageMetadata).describe("the final images as requested"),
     iterations: z.number().describe("the number of iterations before arriving at the image")
   }),
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData, mastra, runtimeContext }) => {
     const characterGeneration = mastra.getWorkflow("createCharacterImageWorkflow");
 
     let result: {
@@ -41,7 +41,8 @@ export const characterGenerationAndRefinementStep = createStep({
     try {
       const run = await characterGeneration.createRunAsync();
       result = await run.start({
-        inputData: inputData
+        inputData: inputData,
+        runtimeContext: runtimeContext,
       }) as any
     } catch (e: unknown){
       throw new Error(`Failed to run workflow character-image-generation-workflow`, e as Error)
@@ -64,7 +65,10 @@ export const characterGenerationAndRefinementStep = createStep({
         try {
           const fixWorkflow = mastra.getWorkflow("fix-image-workflow");
           const r = await fixWorkflow.createRunAsync();
-          result = await r.start({});
+          result = await r.start({
+            inputData: {},
+            runtimeContext: runtimeContext,
+          });
         } catch(e: unknown) {
 
         }

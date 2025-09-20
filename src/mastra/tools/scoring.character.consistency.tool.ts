@@ -1,6 +1,8 @@
-import { Tool, ToolExecutionContext } from "@mastra/core";
+import { Tool, ToolExecutionContext } from "@mastra/core/tools";
 import OpenAI from "openai";
 import {z} from "zod"
+import { OpenAIImageFormats } from "../constants";
+import { Score } from "./types";
 
 const client = new OpenAI();
 
@@ -9,13 +11,16 @@ export const CharacterConsistencyScorer = new Tool({
   description: "Scores how consistent a character is across generated images.",
   inputSchema: z.object({
     description: z.string().describe("the textual description of the character"),
+    characteristics: z.array(z.string()).optional().describe("the defining physical characteristics of a character"),
+    situational: z.array(z.string()).optional().describe("the situational physical characteristics of a character"),
     image: z.instanceof(Buffer).describe("The buffer for the image to be scored"),
+    format: z.enum(Object.values(OpenAIImageFormats) as any).describe("the image format"),
     threshold: z.number().max(1).min(0).default(0.95).describe("The threshold for acceptance"),
     references: z.array(z.instanceof(Buffer)).optional().describe("reference images to evaluate against")
   }),
-  outputSchema: undefined,
+  outputSchema: z.record(z.string(), Score).describe("a record of all defects and their scores"),
   execute: async ({context}) => {
-    const { image, description, references, threshold } = context;
+    const { image, description, characteristics, situational, references, format, threshold } = context;
     const res = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -26,6 +31,8 @@ and match them against their physical description. You take extra attention to a
 to the correct anatomy of a character.
 You are also capable of evaluating against reference images of the character and identify missed/incorrect features.
 You recognize when specific features are hidden from view due to the perspective, shot type or character position and ignore then in your evaluation.
+
+When you find missing physical features, you check again to see if it's a matter of perspective, framing, or lighting. If so, ignore it.
 
 Rate character consistency (0-1), provide reason, and bounding box if applicable.
 
@@ -60,10 +67,12 @@ all ratings should be returned as JSON: {
   ]
 }
 
-### Example output:
+respond with JSON only! never include any markdown format!
+
+### Example output (if the threshold was 0.95):
 {
   "facial": {"score": 1}, // perfect facial match
-  "hair": {"score": 0.96}, // near perfect hair match but still above ${threshold} so no reasons are necessary
+  "hair": {"score": 0.96}, // near perfect hair match but still above the example threshold of 0.95 so no reasons are necessary
   "clothing": {
     "score": 0.86,
     "reasons": [{
@@ -98,26 +107,34 @@ all ratings should be returned as JSON: {
 ## Character description
 ${description}
 
+${characteristics && characteristics.length ? `## Defining physical characteristics\n${characteristics.join(";\n")}` : ""}
+
+${situational && situational.length ? `## Situational physical characteristics\n${situational.join(";\n")}` : ""}
+
 ## Image to evaluate
 
 `},
     // @ts-ignore
-            { type: "image_url", image_url: "data:image/png;base64," + image.toString("base64") },
-            // ...(references  && references.length ? [
-            //   {type: "text", text: "\n## References images\n"},
-            //   ...references.map((r,i) => {
-            //     return [
-            //       {type: "text", text: `\n### reference image ${i}\n`},
-            //       { type: "image_url", image_url: "data:image/png;base64," + r.toString("base64") },
-            //     ]
-            //   }).flat()
-            // ] : [])
+            { type: "image_url", image_url: {url: `data:image/${format};base64,` + image.toString("base64") }},
+            ...(references  && references.length ? [
+              {type: "text", text: "\n## References images\n"},
+              ...references.map((r,i) => {
+                return [
+                  {type: "text", text: `\n### reference image ${i}\n`},
+    // @ts-ignore
+                  { type: "image_url", image_url: {url: `data:image/${format};base64,` + r.toString("base64") }},
+                ]
+              }).flat()
+            ] : [])
           ],
         },
       ],
-    });
-
-    const parsed = JSON.parse(res.choices[0].message.content || "{}");
-    return parsed;
+    } as any);
+    try  {
+      const json = JSON.parse(res.choices[0].message.content || "{}");
+      return json;
+    } catch (e: unknown) {
+      throw new Error("Unable to deserialize response")
+    }
   }
 });

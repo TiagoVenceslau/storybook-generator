@@ -26,7 +26,7 @@ export const characterEvaluationStep = createStep({
     metric: z.enum(["pose", "character", "style"]).describe("metric used"),
     score: Score
   }),
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, mastra, runtimeContext }) => {
 
     const {metric, style, threshold, imageUrl, references} = inputData;
 
@@ -54,7 +54,11 @@ export const characterEvaluationStep = createStep({
       throw new Error(`The tool's execute function is not defined. should be impossible`);
     let result: any;
     try {
-      result = await tool.execute(input);
+      result = await tool.execute({
+        context: input,
+        mastra: mastra,
+        runtimeContext: runtimeContext
+      });
     } catch (e: unknown) {
       throw new Error(`failed calling the evaluation tool`, e as Error)
     }

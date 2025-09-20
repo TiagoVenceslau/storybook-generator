@@ -104,6 +104,7 @@ export const characterImageGenerationTool = createTool({
 - **Character Visualization**: Bring characters to life with consistent appearances in the given pose;
 - **Attention to Detail**: you consistently respect, and correctly place the defining characteristics of the characters, or omit them if by because of the pose, clothing or pros, they are hidden from view;
 - **Character Posing**: You take extra case to pose the character as requested;
+- **Facial Details and Expressions**: you take extra care to create detailed, expressive and life-like faces;
 - **Anatomically Correct**: you have extra attention to hands, arms, legs, feet, to ensure they respect the character's anatomy;
 - **Pure White Backgrounds**: you specialize in making representation of the characters in given poses  for reference purposes (eg Character Sheet) so always put them against pure white background
 - **Framing**: your complete images always fit the frame_size;

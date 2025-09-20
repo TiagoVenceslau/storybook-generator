@@ -2,6 +2,7 @@ import { Tool } from "@mastra/core";
 import OpenAI from "openai";
 import z from "zod";
 import { Score } from "./types";
+import { OpenAIImageFormats } from "../constants";
 
 const client = new OpenAI();
 
@@ -12,11 +13,12 @@ export const StyleConsistencyScorer = new Tool({
     threshold: z.number().max(1).min(0).default(0.95).describe("the threshold for acceptance"),
     style: z.string().describe("the graphical style"),
     image: z.instanceof(Buffer).describe("The buffer for the image to be scored"),
+    format: z.enum(Object.values(OpenAIImageFormats) as any).describe("the image format"),
     references: z.array(z.instanceof(Buffer)).optional().describe("reference images to evaluate against")
   }),
   outputSchema: Score,
   execute: async ({context}) => {
-    const { image, style, references, threshold } = context;
+    const { image, style, references, threshold, format } = context;
 
     const res = await client.chat.completions.create({
       model: "gpt-4o",
@@ -79,7 +81,7 @@ Rating should be returned as JSON: {
           content: [
             { type: "text", text: `Evaluate how closely this matches style: ${style}` },
             // @ts-ignore
-            { type: "image_url", image_url: "data:image/png;base64," + image.toString("base64") },
+            { type: "image_url", image_url: `data:image/${format};base64,` + image.toString("base64") },
           ],
         },
       ],

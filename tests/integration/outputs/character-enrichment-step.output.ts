@@ -1,5 +1,5 @@
 export const AliceCharacterEnrichmentStepOutput = {
-  "description": "A tall, statuesque woman with a calm, composed bearing. A faint linear mark traces along the right side of her chin toward the neck, hinting at a storied past. Her blue eyes carry a piercing, calculating light, and her smile can be warm or edged with menace. Her figure is slim and refined, suggesting quiet confidence and lethal poise.",
+  "description": "A tall, beautiful statuesque woman with a calm, composed bearing. A faint linear mark traces along the right side of her chin toward the neck, hinting at a storied past. Her blue eyes carry a piercing, calculating light, and her smile can be warm or edged with menace. Her figure is slim and refined, suggesting quiet confidence and lethal poise.",
   "characteristics": [
     "tall, slender, elegant figure",
     "blonde hair",

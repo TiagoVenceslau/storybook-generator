@@ -18,3 +18,4 @@
 ./output
 !./output/.gitkeep
 /tests/outputs
+/mastra-memory.db

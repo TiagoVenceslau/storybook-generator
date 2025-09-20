@@ -29,7 +29,7 @@ export const characterCreationStep = createStep({
     style: z.string().describe('The style that was applied'),
     pose: z.string().describe('The pose that was applied'),
   }),
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData, mastra, runtimeContext }) => {
     const {style, name, project, pose, mood, model, situational, description, characteristics} = inputData;
 
     const charCreationTool = characterImageGenerationTool;
@@ -51,7 +51,7 @@ export const characterCreationStep = createStep({
         size: OpenAIImageSize.x1024x1536,
         quality: OpenAIImageQuality.low,
         format: OpenAIImageFormats.jpeg
-      }, mastra, runtimeContext: new RuntimeContext()});
+      }, mastra, runtimeContext: runtimeContext});
     } catch (e: unknown) {
       throw new Error(`Failed to get response from Character  Creation tool: ${e}`)
     }

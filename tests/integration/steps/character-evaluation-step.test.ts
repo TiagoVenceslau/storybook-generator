@@ -3,18 +3,15 @@ dotev.config();
 import { Mastra, Run, Workflow } from "@mastra/core";
 import { createWorkflow } from "@mastra/core/workflows";
 import { characterEnrichmentStep } from "../../../src/mastra/workflows/character/character-enrichment.step";
-import { getMastraForTest, setTestFsBasePath } from "../mastra";
-import { AliceDefault, Character } from "../characters";
+import { getMastraForTest } from "../mastra";
+import { AliceDefault } from "../characters";
 import { CharacterEnrichmentAgent } from "../../../src/mastra/agents/character.enrichment.agent";
-import { characterCreationStep } from "../../../src/mastra/workflows/character/character-creation.step";
-import { AliceCharacterEnrichmentStepOutput } from "../outputs/character-enrichment-step.output";
-import { OpenAIImageFormats, OpenAIImageQuality, OpenAIImageSize } from "../../../src/mastra/constants";
 
-const step = characterCreationStep;
-const stepName = characterCreationStep.id;
+const step = characterEnrichmentStep;
+const stepName = step.id;
 
 const includeScoring = false
-setTestFsBasePath()
+
 jest.setTimeout(100000)
 
 describe(`${stepName} test`, () => {
@@ -30,7 +27,7 @@ describe(`${stepName} test`, () => {
       steps: [step]
     }).then(step).commit();
     mastra = getMastraForTest(`${stepName} test`, {[`${stepName} test`]: wf}, {
-      // characterEnrichmentAgent: CharacterEnrichmentAgent,
+      characterEnrichmentAgent: CharacterEnrichmentAgent,
     })
     expect(mastra).toBeDefined();
   })
@@ -40,22 +37,10 @@ describe(`${stepName} test`, () => {
   })
 
   it(`should run ${stepName}`, async () => {
-
-    const input = Object.assign({}, AliceCharacterEnrichmentStepOutput, {
-      project: stepName,
-      name: stepName,
-      model: "gpt-image-1",
-      numImages: 1,
-      evaluationThreshold: 0.90,
-      pose: "full body shot, natural light. provocative",
-      style: "Dark detective like color graphic novel",
-      size: OpenAIImageSize.x1024x1536,
-      quality: OpenAIImageQuality.high,
-      format: OpenAIImageFormats.png
-    })
-
     const response = await run.start({
-      inputData: input,
+      inputData: Object.assign({}, AliceDefault, {
+        style: "Dark detective like graphic novel"
+      }),
     })
 
     expect(response.status).toBe("success")
@@ -63,5 +48,8 @@ describe(`${stepName} test`, () => {
     const result = (steps[step.id] as any).output;
 
     expect(result).toBeDefined();
+    expect(result.description).not.toEqual(AliceDefault.description);
+    expect(result.characteristics).not.toEqual(AliceDefault.characteristics);
+    expect(result.situational).not.toEqual(AliceDefault.situational);
   })
 })

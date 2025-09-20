@@ -73,3 +73,34 @@ export const stylePrompts: { [key: string]: { prefix: string; suffix: string } }
   }
 };
 
+export enum OpenAIImageFormats {
+  jpeg = 'jpeg',
+  png = 'png',
+  webp = 'webp',
+}
+
+export enum OpenAIImageQuality {
+  standard = 'standard',
+  hd = 'hd',
+  low = 'low',
+  medium = 'medium',
+  high = 'high',
+  auto = 'auto',
+}
+
+export enum OpenAIImageModels {
+  DALLE_3 = 'dalle-3',
+  GPT_IMAGE_1 = 'gpt-image-1',
+}
+
+export enum OpenAIImageSize {
+  auto = 'auto',
+  x1024x1024 = '1024x1024',
+  x1536x1024 = '1536x1024',
+  x1024x1536 = '1024x1536',
+  x256x256 = '256x256',
+  x512x512 = '512x512',
+  x1792x1024 = '1792x1024',
+  x1024x1792 = '1024x1792',
+}
+

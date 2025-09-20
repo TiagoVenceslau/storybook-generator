@@ -15,6 +15,6 @@ export const AliceDefaultCharacterCreationStepOutput = {
 ],
   "totalImages": 1,
   "style": "Dark detective like color graphic novel",
-  "pose": "FULL BODY frontal (head and toes must me in the frame). provocative",
+  "pose": "full body shot. provocative",
   "tokensUsed": 1708
 }

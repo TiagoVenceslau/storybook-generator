@@ -22,9 +22,10 @@ export const ImageMetadata = z.object({
   generationTime: z.number().describe('Time taken to generate in milliseconds'),
   model: z.string().describe('AI model used for generation'),
   quality: z.string().describe('Quality setting used'),
-  aspectRatio: z.string().optional().describe('Aspect ratio used'),
+  size: z.string().describe('The image size in pixels'),
+  format: z.string().describe('The image format'),
   tokensUsed: z.number().describe('the number of tokens used by the model')
-})
+}).describe('Metadata about the generated image');
 
 export const ImageData = z.object({
   imageUrl: z.string().describe('Local file path of the generated image'),

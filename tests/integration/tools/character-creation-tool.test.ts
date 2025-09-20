@@ -4,6 +4,7 @@ import z from "zod";
 import { characterImageGenerationTool } from "../../../src/mastra/tools/character.creation.tool";
 import { AliceCharacterEnrichmentStepOutput } from "../outputs/character-enrichment-step.output";
 import { setTestFsBasePath } from "../mastra";
+import { OpenAIImageFormats, OpenAIImageQuality, OpenAIImageSize } from "../../../src/mastra/constants";
 
 setTestFsBasePath()
 
@@ -27,9 +28,11 @@ describe(toolName, () => {
       characteristics: character.characteristics,
       situational: character.situational,
       numImages: 1,
-      pose: "full body frontal. provocative",
+      pose: "full body. provocative",
       style: "Dark detective like graphic novel",
-      aspectRatio: "4:3",
+      size: OpenAIImageSize.x1024x1536,
+      quality: OpenAIImageQuality.low,
+      format: OpenAIImageFormats.jpeg
     }
     let result: z.infer<typeof tool.outputSchema>
 

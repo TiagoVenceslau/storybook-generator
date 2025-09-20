@@ -8,6 +8,7 @@ import { AliceDefault, Character } from "../characters";
 import { CharacterEnrichmentAgent } from "../../../src/mastra/agents/character.enrichment.agent";
 import { characterCreationStep } from "../../../src/mastra/workflows/character/character-creation.step";
 import { AliceCharacterEnrichmentStepOutput } from "../outputs/character-enrichment-step.output";
+import { OpenAIImageFormats, OpenAIImageQuality, OpenAIImageSize } from "../../../src/mastra/constants";
 
 const step = characterCreationStep;
 const stepName = characterCreationStep.id;
@@ -46,8 +47,11 @@ describe(`${stepName} test`, () => {
       model: "gpt-image-1",
       numImages: 1,
       evaluationThreshold: 0.90,
-      pose: "FULL BODY frontal (head and toes must me in the frame). provocative",
-      style: "Dark detective like color graphic novel"
+      pose: "full body shot. provocative",
+      style: "Dark detective like color graphic novel",
+      size: OpenAIImageSize.x1024x1536,
+      quality: OpenAIImageQuality.high,
+      format: OpenAIImageFormats.png
     })
 
     const response = await run.start({

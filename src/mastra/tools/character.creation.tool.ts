@@ -2,90 +2,15 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { OpenAI } from "openai";
 import { Project } from "../utils/project";
+import { OpenAIImageFormats, OpenAIImageModels, OpenAIImageQuality, OpenAIImageSize } from "../constants";
+import { ImageData } from "./types";
 
-// Style prompts for different visual styles
-const stylePrompts: { [key: string]: { prefix: string; suffix: string } } = {
-  'Cinematic': {
-    prefix: 'Cinematic film still, photorealistic,',
-    suffix: ', 4k, hyper-detailed, professional color grading, sharp focus'
-  },
-  'Photographic': {
-    prefix: 'Professional photograph, photorealistic,',
-    suffix: ', 85mm lens, sharp focus, high quality photo'
-  },
-  'Anime': {
-    prefix: 'Vibrant anime style, key visual,',
-    suffix: ', cel-shaded, detailed characters, trending on Pixiv, by Makoto Shinkai'
-  },
-  'Manga': {
-    prefix: 'Black and white manga panel,',
-    suffix: ', screentones, sharp lines, detailed ink work, dynamic action'
-  },
-  'Ghibli-esque': {
-    prefix: 'Ghibli-esque animation style,',
-    suffix: ', beautiful hand-drawn background, whimsical, soft color palette'
-  },
-  'Disney-esque': {
-    prefix: 'Classic Disney animation style,',
-    suffix: ', expressive characters, vibrant colors, storybook illustration'
-  },
-  'Coloring Book': {
-    prefix: 'Coloring book art style,',
-    suffix: ', simplified, bold line drawings designed for easy coloring. The focus is on clear, enclosed outlines that can be filled with color later. It avoids shading, gradients, or excessive detail that would interfere with coloring'
-  },
-  'Line Art': {
-    prefix: 'Line art style,',
-    suffix: ', drawing that relies exclusively on clean, deliberate lines to define form, structure, and detail. Avoids gradients, painterly effects, or full shading. Emphasis is on clarity, contour, and precise strokes'
-  },
-  'Comic Book': {
-    prefix: 'American comic book art style,',
-    suffix: ', bold outlines, vibrant colors, halftone dots, action-packed'
-  },
-  'Graphic Novel': {
-    prefix: 'Mature graphic novel art style,',
-    suffix: ', detailed inks, atmospheric lighting, moody colors'
-  },
-  'Watercolor': {
-    prefix: 'Beautiful watercolor painting,',
-    suffix: ', soft edges, vibrant washes of color, on textured paper'
-  },
-  'Low Poly': {
-    prefix: 'Low poly 3D render,',
-    suffix: ', geometric shapes, simple color palette, isometric view'
-  },
-  'Pixel Art': {
-    prefix: 'Detailed pixel art, 16-bit,',
-    suffix: ', vibrant color palette, nostalgic retro video game style'
-  },
-  'Steampunk': {
-    prefix: 'Steampunk style illustration,',
-    suffix: ', intricate gears and cogs, brass and copper details, Victorian aesthetic'
-  },
-  'Cyberpunk': {
-    prefix: 'Cyberpunk cityscape,',
-    suffix: ', neon-drenched, high-tech low-life, Blade Runner aesthetic, moody lighting'
-  },
-  'Fantasy Art': {
-    prefix: 'Epic fantasy art, D&D style,',
-    suffix: ', dramatic lighting, detailed armor and landscapes, magical atmosphere'
-  },
-  'Film Noir': {
-    prefix: 'Black and white film noir style,',
-    suffix: ', high contrast, dramatic shadows, 1940s detective movie aesthetic'
-  },
-  'Photorealistic': {
-    prefix: 'Photorealistic style, highly detailed,',
-    suffix: ', realistic photography, lifelike quality'
-  }
-};
-
-
-// Helper function to generate image using AI SDK
 export async function generateCharacterImage(prompt: string, opts = {
   model: "gpt-image-1",
   format: "jpeg",
   quality: "medium",
-  size: "1024x1024"
+  size: "1024x1024",
+  background: "opaque"
 }, references?: string[]): Promise<{imageData: string, tokensUsed: number}> {
   console.log('🎨 [Character Generation] Starting image generation process...');
   console.log(`📝 [Character Generation] Input parameters:`, Object.assign({
@@ -115,7 +40,8 @@ export async function generateCharacterImage(prompt: string, opts = {
       n: 1,
       size: opts.size as any,
       quality: opts.quality as any,
-      output_format: opts.format as any
+      output_format: opts.format as any,
+      background: opts.background as any,
     });
 
     const generationTime = Date.now() - startTime;
@@ -135,7 +61,6 @@ export async function generateCharacterImage(prompt: string, opts = {
     console.error('❌ [Character Generation] Error during API call:', error);
     throw error;
   }
-
 }
 
 export const characterImageGenerationTool = createTool({
@@ -150,34 +75,25 @@ export const characterImageGenerationTool = createTool({
     pose: z.string().default("front facing neutral pose ").describe("the pose of the character"),
     style: z.string().default("Graphic Novel").describe("The art style to apply"),
     mood: z.string().optional().describe("The overall mood to apply to the image"),
-    aspectRatio: z.enum(['1:1', '16:9', '4:3', '3:2']).default('16:9').describe('Image aspect ratio'),
     numImages: z.number().default(1).describe('Number of images to generate (default: 1)'),
-    model: z.enum(["dalle-3", "gpt-image-1"]).describe("The model to be used to generate the images")
+    model: z.enum(Object.values(OpenAIImageModels) as any).optional().default(OpenAIImageModels.GPT_IMAGE_1).describe("The model to be used to generate the images"),
+    size: z.enum(Object.values(OpenAIImageSize) as any).optional().default(OpenAIImageSize.auto).describe("The size of the image to generate"),
+    quality: z.enum(Object.values(OpenAIImageQuality) as any).optional().default(OpenAIImageQuality.low).describe("the quality of the image to generate"),
+    format: z.enum(Object.values(OpenAIImageFormats) as any).optional().default(OpenAIImageFormats.jpeg).describe("the image format"),
   }),
   outputSchema: z.object({
-    images: z.array(z.object({
-      imageUrl: z.string().describe('Local file path of the generated image'),
-      prompt: z.string().describe('The final prompt used for generation'),
-      style: z.string().describe('The style that was applied'),
-      metadata: z.object({
-        generationTime: z.number().describe('Time taken to generate in milliseconds'),
-        model: z.string().describe('AI model used for generation'),
-        quality: z.string().describe('Quality setting used'),
-        aspectRatio: z.string().describe('Aspect ratio used'),
-        tokensUsed: z.number().describe('the number of tokens used by the model')
-      }).optional(),
-    })).describe('Array of generated images with local file paths'),
+    images: z.array(ImageData).describe('Array of generated images with local file paths'),
     totalImages: z.number().describe('Total number of images generated'),
     style: z.string().describe('The style that was applied'),
     pose: z.string().describe('The pose that was applied'),
   }),
-  execute: async ({ context, mastra }) => {
+  execute: async ({ context, mastra, runtimeContext }) => {
     console.log('🛠️ [Character Generation Tool] Tool execution started...');
     console.log(`📋 [Character Generation Tool] Input context:`, Object.assign({}, context, {
       description: context.description.substring(0, 100) + "..."
     }));
 
-    const { project, name, pose, model, description, characteristics, situational, mood, style, aspectRatio, numImages = 1 } = context;
+    const { project, name, pose, model, description, format, quality, characteristics, situational, size, mood, style, numImages = 1 } = context;
 
     const prompt = `
     You are a professional image generation specialist using AI to create character sheets for characters.
@@ -190,7 +106,8 @@ export const characterImageGenerationTool = createTool({
 - **Character Posing**: You take extra case to pose the character as requested;
 - **Anatomically Correct**: you have extra attention to hands, arms, legs, feet, to ensure they respect the character's anatomy;
 - **Pure White Backgrounds**: you specialize in making representation of the characters in given poses  for reference purposes (eg Character Sheet) so always put them against pure white background
-- **Framing**: unless specified otherwise, you always create full body images
+- **Framing**: your complete images always fit the frame_size;
+- **Complete character**: unless specified by the user, the complete character (body, limbs, extremities, head, both feet, both hands) must be in frame;
 
 ## Image Generation Guidelines
 - **CRITICAL STYLE RULES**:
@@ -208,6 +125,9 @@ export const characterImageGenerationTool = createTool({
 - **Project Consistency**: Maintain visual consistency with user's established preferences and patterns
 
 Focus on creating character images that completely respect the description, meant as an image of a comic book or game character sheet.
+
+## frame_size
+${size} 
  
 ## character description
 ${description}
@@ -245,9 +165,10 @@ ${mood ? `## Mood\n${mood}` : ""}
         console.log(`🚀 [Character Generation Tool] Calling generateSceneImage...`);
         imageData = await generateCharacterImage(imagePrompt, {
           model: model,
-          format: "png",
-          quality: "medium",
-          size: "1024x1024"
+          format: format,
+          quality: quality,
+          size: size,
+          background: "opaque"
         });
         console.log(`✅ [Character Generation Tool] Image data received (${imageData.imageData.length} characters)`);
 
@@ -264,8 +185,9 @@ ${mood ? `## Mood\n${mood}` : ""}
         const imageMetadata = {
           generationTime: Date.now() - startTime,
           model: model,
-          quality: "medium",
-          aspectRatio,
+          quality: quality as string,
+          size: size as string,
+          format: format as string,
           tokensUsed: imageData.tokensUsed
         };
 

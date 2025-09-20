@@ -1,20 +1,24 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { OpenAI } from "openai";
-import { Project } from "../utils/project";
 import { ImageMetadata } from "./types";
 import fs from "fs";
 import { FileApi } from "../../FileApi";
+import {
+  OpenAIEditFidelity, OpenAIImageBackgrounds,
+  OpenAIImageFormats,
+  OpenAIImageModels,
+  OpenAIImageQuality,
+} from "../constants";
 
 // Helper function to generate image using AI SDK
 export async function editImage(imagePath: string, imageMask: string, prompt: string, opts = {
   model: "gpt-image-1",
   format: "jpeg",
   quality: "medium",
-  size: "1024x1024",
   background: "auto",
   fidelity: "high"
-}): Promise<{imageData: string, tokensUsed: number}> {
+}, references?: string[]): Promise<{imageData: string, tokensUsed: number}> {
   console.log('🎨 [Image Edit Tool] Starting image generation process...');
   console.log(`📝 [Image Edit Tool] Input parameters:`, Object.assign({
     prompt: prompt.substring(0, 50) + '...',
@@ -38,7 +42,7 @@ export async function editImage(imagePath: string, imageMask: string, prompt: st
 
     // Generate exactly one image (AI SDK will batch if needed)
     const result = await openai.images.edit({
-      image: fs.createReadStream(imagePath),
+      image: !references ? fs.createReadStream(imagePath) : [imagePath, ...references].map(p => fs.createReadStream(p)),
       prompt: prompt,
       background: opts.background as "opaque" | "transparent" | "auto",
       input_fidelity: opts.fidelity as "high" | "low",
@@ -75,18 +79,22 @@ export const imageEditTool = createTool({
     prompt: z.string().describe("the edit to apply to the selected part of the image"),
     imagePath: z.string().describe("the image file path"),
     maskImage: z.string().describe("the mask image to use"),
-    fidelity: z.enum(["high", "low"]).default("high").describe("The fidelity to the original image"),
-    model: z.enum(["dalle-3", "image-gpt-1"]).describe("The model to be used to generate the images")
+    fidelity: z.enum(Object.values(OpenAIEditFidelity) as any).default(OpenAIEditFidelity.high).describe("The fidelity to the original image"),
+    model: z.enum(Object.values(OpenAIImageModels) as any).default(OpenAIImageModels.GPT_IMAGE_1).describe("The model to be used to generate the images"),
+    quality: z.enum(Object.values(OpenAIImageQuality) as any).optional().default(OpenAIImageQuality.low).describe("the quality of the image to generate"),
+    format: z.enum(Object.values(OpenAIImageFormats) as any).optional().default(OpenAIImageFormats.jpeg).describe("the image format"),
+    background: z.enum(Object.values(OpenAIImageBackgrounds) as any).optional().default(OpenAIImageBackgrounds.auto).describe("the image format"),
+    references: z.array(z.string()).optional().describe("list of reference images"),
   }),
   outputSchema: z.object({
     imageUrl: z.string().describe('Local file path of the generated image'),
-    model: z.enum(["dalle-3", "image-gpt-1"]).describe("The model to be used to generate the images"),
+    model: z.string().describe("The model to be used to generate the images"),
     metadata: ImageMetadata.optional()
   }),
   execute: async ({ context, mastra }) => {
     console.log('🛠️ [Image Edit Tool] Tool execution started...');
 
-    const { prompt, imagePath, maskImage, model, fidelity } = context;
+    const { prompt, imagePath, maskImage, model, background, fidelity, format, quality, references } = context;
 
     const p = `
     You are a professional image edition specialist using AI to make selective changes to images according to a provided request.
@@ -97,14 +105,20 @@ export const imageEditTool = createTool({
 - **Attention to Detail**: you consistently respect, and correctly place the defining characteristics of the characters, or omit them if by because of the pose, clothing or pros, they are hidden from view;
 - **Character Posing**: You take extra case to pose the character as requested;
 - **Anatomically Correct**: you have extra attention to hands, arms, legs, feet, to ensure they respect the character's anatomy;
-- **Image Coherence**: you specialize in making selective changes that follow the style maintain coherence with the rest of the image. You focus on the changes requested with minimal impact.
+- **Image Coherence**: you specialize in making selective changes that follow the style maintain coherence with the rest of the image unless asked otherwise. You focus on the changes requested with minimal impact.
 
 ## Image Generation Guidelines
 - **CRITICAL STYLE RULES**:
-    - You maintain the overall look and feel of the image.
+    - You maintain the overall look and feel of the image unless specified otherwise.
 
 ## Changes to Apply:
 ${prompt}
+
+${references ? `
+## IMPORTANT
+ - the first image is the image to edit;
+ - the remaining images are reference images;
+` : ""}
 Return the corrected image  without questions.`
     let imageData: {imageData: string, tokensUsed: number};
     try {
@@ -115,12 +129,11 @@ Return the corrected image  without questions.`
       console.log(`🚀 [Image Edit Tool] Calling editImage...`);
       imageData = await editImage(imagePath, maskImage, p, {
         model: model,
-        format: "jpeg",
-        quality: "medium",
-        size: "1024x1024",
-        background: "opaque",
+        format: format,
+        quality: quality,
+        background: background,
         fidelity: fidelity
-      });
+      }, references);
       console.log(`✅ [Image Edit Tool] Image data received (${imageData.imageData.length} characters)`);
 
       // Save image locally
@@ -130,9 +143,10 @@ Return the corrected image  without questions.`
       const imageMetadata = {
         generationTime: Date.now() - startTime,
         model: model,
-        quality: "medium",
+        quality: quality,
         fidelity: fidelity,
-        tokensUsed: imageData.tokensUsed
+        tokensUsed: imageData.tokensUsed,
+        format: format,
       };
 
       console.log(`📊 [Image Edit Tool] Image metadata:`, imageMetadata);

@@ -4,40 +4,50 @@ import { ImageMetadata } from "../../tools/types";
 import { characterCreationStep } from "./character-creation.step";
 import { characterEvaluationStep } from "./character-evaluation.step";
 import { metricAggregationStep } from "./metric-aggregation.step";
+import { OpenAIImageFormats, OpenAIImageModels, OpenAIImageQuality, OpenAIImageSize } from "../../constants";
 
-export const createCharacterImageWorkflow = createWorkflow({
-  id: 'character-image-generation-workflow',
-  description: 'Complete pipeline from description and style, to final evaluation',
+export const createEditCharacterImageWorkflow = createWorkflow({
+  id: 'character-image-create-edit-workflow',
+  description: 'Complete pipeline from description, pose and style, to creation/edit and final evaluation',
   inputSchema: z.object({
-    style: z.string().default("dark detective like graphic novel").describe('Visual style for image generation'),
-    name: z.string().default("Alice").describe("The name of the character"),
+    project: z.string().default("miguel").describe("The project name (also where files are stored)"),
+    style: z.string().default("dark, moody detective like graphic novel in aggressive strokes and strong colors").describe('Visual style for image generation'),
+    mood: z.string().optional().describe('the overall mood of the image'),
+    name: z.string().describe("The name of the character"),
+    pose: z.string().default("Full body frontal, neutral pose, neutral expression, natural light").describe("the pose of the character"),
+    numImages: z.number().default(1).describe("The number of images to create"),
+    size: z.enum(Object.values(OpenAIImageSize) as any).optional().default(OpenAIImageSize.auto).describe("The size of the image to generate"),
+    quality: z.enum(Object.values(OpenAIImageQuality) as any).optional().default(OpenAIImageQuality.low).describe("the quality of the image to generate"),
+    format: z.enum(Object.values(OpenAIImageFormats) as any).optional().default(OpenAIImageFormats.jpeg).describe("the image format"),
     description: z.string().default(`
     A tall beautiful blond haired middle aged woman, with a strategically located mole on the right side of her chin,
     blue piecing eyes and a gorgeous smile, whenever she was willing to use it. Slim and elegant figure.
-    She is dressed only in a white man's shirt 
+    She is dressed only in a loose white man's dress shirt  and a loose red tie, holding a gun on her right hand. 
     `).describe("A physical description of the character"),
     characteristics: z.array(z.string()).optional().describe("a list of defining physical characteristics"),
     situational: z.array(z.string()).optional().describe("a list of defining physical characteristics"),
-    project: z.string().default("miguel").describe("The project folder"),
-    pose: z.string().default("full body frontal and provocative").describe("the pose of the character"),
-    model: z.string().describe("the image generation model to use"),
-    numImages: z.number().describe("The number of different images to create"),
-    currentIteration: z.number().default(1).describe("the current iteration"),
-    maxIteration: z.number().default(5).describe("the maximum allowed iterations before giving up"),
-    evaluationThreshold: z.number().max(1).min(0).default(0.95).describe("the threshold for acceptance"),
+    model: z.enum(Object.values(OpenAIImageModels) as any).optional().default(OpenAIImageModels.GPT_IMAGE_1).describe("the image generation model to use"),
+    // fixes: ze.array
+    fixThreshold: z.number().max(1).min(0).default(0.90).describe("the threshold for acceptance"),
+    regenThreshold: z.number().max(1).min(0).default(0.7).describe("the threshold for acceptance"),
+    references: z.array(z.string()).optional().describe("a list of reference image paths"),
+    action: z.enum(["create", "edit"]).default("create").describe("whether to create or edit the character image"),
   }),
   outputSchema: z.object({
     images: z.array(ImageMetadata).describe('Array of generated images with local file paths'),
     totalImages: z.number().describe('Total number of images generated'),
     style: z.string().describe('The style that was applied'),
     pose: z.string().describe('The pose that was applied'),
-    iterations: z.number().describe("The number of iterations performed before achieving the result"),
     model: z.string().describe("the model used")
   }),
   steps: [characterCreationStep, characterEvaluationStep, metricAggregationStep]
 }).map(async ({inputData}) => {
   return inputData;
-}).then(characterCreationStep)
+})
+  .branch([
+  [async ({inputData}) => inputData.action === "create", characterCreationStep],
+  [async ({inputData}) => inputData.action === "edit", characterCreationStep]
+])
   .map(async ({inputData, getInitData})  => {
     const {evaluationThreshold} = getInitData()
     return {

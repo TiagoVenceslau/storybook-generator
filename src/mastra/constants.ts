@@ -73,10 +73,21 @@ export const stylePrompts: { [key: string]: { prefix: string; suffix: string } }
   }
 };
 
+export enum OpenAIImageBackgrounds {
+  opaque = 'opaque',
+  transparent = 'transparent',
+  auto = 'auto'
+}
+
 export enum OpenAIImageFormats {
   jpeg = 'jpeg',
   png = 'png',
   webp = 'webp',
+}
+
+export enum OpenAIEditFidelity {
+  high = 'high',
+  low = 'low',
 }
 
 export enum OpenAIImageQuality {

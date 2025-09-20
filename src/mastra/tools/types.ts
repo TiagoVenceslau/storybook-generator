@@ -22,7 +22,8 @@ export const ImageMetadata = z.object({
   generationTime: z.number().describe('Time taken to generate in milliseconds'),
   model: z.string().describe('AI model used for generation'),
   quality: z.string().describe('Quality setting used'),
-  size: z.string().describe('The image size in pixels'),
+  size: z.string().optional().describe('The image size in pixels'),
+  fidelity: z.string().optional().describe('the fidelity of the edit'),
   format: z.string().describe('The image format'),
   tokensUsed: z.number().describe('the number of tokens used by the model')
 }).describe('Metadata about the generated image');
@@ -46,3 +47,14 @@ export const StyledCharacterDefinition = z.intersection(CharacterVisualDefinitio
   name: z.string().describe("The name of the character"),
   pose: z.string().default("Full body frontal, neutral pose").describe("the pose of the character"),
 }))
+
+export const PromptParameters = z.object({
+  temperature: z.number().optional().describe("The temperature to use for the prompt"),
+  maxTokens: z.number().optional().describe("The maximum number of tokens to generate"),
+  topP: z.number().optional().describe("The top p value to use for the prompt"),
+  topK: z.number().optional().describe("The top k value to use for the prompt"),
+  frequencyPenalty: z.number().optional().describe("The frequency penalty to use for the prompt"),
+  presencePenalty: z.number().optional().describe("The presence penalty to use for the prompt"),
+  stopSequences: z.array(z.string()).optional().describe("The stop sequences to use for the prompt"),
+  seed: z.number().optional().describe("The seed to use for the prompt"),
+})

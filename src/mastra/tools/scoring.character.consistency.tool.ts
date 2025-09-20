@@ -129,6 +129,7 @@ ${situational && situational.length ? `## Situational physical characteristics\n
           ],
         },
       ],
+      temperature: 0.2
     } as any);
     try  {
       const json = JSON.parse(res.choices[0].message.content || "{}");

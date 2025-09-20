@@ -7,14 +7,15 @@ import { setTestFsBasePath } from "../mastra";
 
 setTestFsBasePath()
 
-const agentName = "character-enrichment-agent";
+const agent = CharacterEnrichmentAgent;
+const agentName = agent.name;
 
 jest.setTimeout(100000)
 
 describe(`${agentName} test`, () => {
   it("should generates responses", async() => {
     const alice = AliceDefault;
-    const response = await CharacterEnrichmentAgent.generate(`
+    const response = await agent.generate(`
     ## description
     ${alice.description}
     ## characteristics

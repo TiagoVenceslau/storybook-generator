@@ -10,9 +10,11 @@ export const ImageFixPromptAgent = new Agent({
   and performing the described changes accurately always being faithful the the style, environment and overall image mood.
           
 You expect the user to provide you with:
-- defect (mandatory): the description of the defect;
+- defect(s) (mandatory): the description of the defect(s);
 
 Create an perfect prompt for an Image LLM to perform the selected changes and affect nothing else, always making sure the overall style and mood of the image is preserved.
+
+Only return JSON. no markdown
 
 Return format:
 

@@ -72,7 +72,7 @@ export const characterImageGenerationTool = createTool({
     description: z.string().describe("The overall description of the character"),
     characteristics: z.array(z.string()).describe("a list of the character's defining physical characteristics, eg: factial features, hair, scars, body types, height, tattoos, scars, etc"),
     situational: z.array(z.string()).describe("a list of situational physical features, eg: clothes, props, etc"), 
-    pose: z.string().default("front facing neutral pose ").describe("the pose of the character"),
+    pose: z.string().default("front facing neutral pose, natural lighting").describe("the pose of the character"),
     style: z.string().default("Graphic Novel").describe("The art style to apply"),
     mood: z.string().optional().describe("The overall mood to apply to the image"),
     numImages: z.number().default(1).describe('Number of images to generate (default: 1)'),

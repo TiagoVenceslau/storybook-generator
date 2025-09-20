@@ -17,3 +17,4 @@
 /.env
 ./output
 !./output/.gitkeep
+/tests/outputs

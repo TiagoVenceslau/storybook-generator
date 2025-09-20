@@ -14,6 +14,10 @@ import { storyboardNetwork, storyboardNetworkLegacy } from './agentnetwork/agent
 import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { automatedAgentNetworkWorkflow } from "./workflows/agent-network-automated-workflow";
+import { characterGeneratorAgent } from "./agents/character-generator-agent";
+import { createCharacterSheetWorkflow } from "./workflows/consistent-character-creation.workflow";
+import { CharacterEnrichmentAgent } from "./agents/character.enrichment.agent";
+import { ImageFixPromptAgent } from "./agents/image.fix.prompt.agent";
 
 ModelSwitch.register(Features.NETWORK, "openai", "gpt-5", openai)
 ModelSwitch.register(Features.NETWORK, "google", "gemini-2.5-flash", google)
@@ -43,6 +47,9 @@ export const mastra = new Mastra({
     storyboardAgent: storyboardAgent(),
     imageGeneratorAgent: imageGeneratorAgent(),
     exportAgent: exportAgent(),
+    characterGenerationAgent: characterGeneratorAgent(),
+    characterEnrichmentAgent: CharacterEnrichmentAgent,
+    imageFixPromptAgent: ImageFixPromptAgent
   },
   networks: {
     storyboardNetworkLegacy: storyboardNetworkLegacy(),
@@ -52,6 +59,7 @@ export const mastra = new Mastra({
   },
   workflows: {
     automatedAgentNetworkWorkflow,
+    createCharacterSheetWorkflow
   },
   server: {
     host: "localhost",
@@ -63,6 +71,11 @@ export const mastra = new Mastra({
   },
   bundler: {
     sourcemap: true,
+    externals: [
+      "sharp",
+      "undici",
+      "formatdata-node"
+    ]
   },
   storage: sharedStorage, // Enable shared storage for memory
   logger: new PinoLogger({

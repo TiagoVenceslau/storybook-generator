@@ -9,6 +9,8 @@ setTestFsBasePath()
 
 const tool = characterImageGenerationTool;
 
+jest.setTimeout(200000)
+
 const toolName = tool.id;
 
 describe(toolName, () => {

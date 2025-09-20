@@ -2,13 +2,14 @@ import { createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import { ImageMetadata } from "../../tools/types";
 import { characterImageGenerationTool } from "../../tools/character.creation.tool";
+import { RuntimeContext } from "@mastra/core/runtime-context";
 
 export const characterCreationStep = createStep({
   id: 'create-character-image',
   description: 'generate a character image based on the description',
   inputSchema: z.object({
     project: z.string().describe("The project name (also where files are stored"),
-    model: z.string().describe("the image model to be used"),
+    model: z.enum(["dalle-3", "gpt-image-1"]).describe("the image model to be used"),
     style: z.string().default("Graphical Novel").describe('Visual style for image generation'),
     mood: z.string().optional().describe('the overall mood of the image'),
     name: z.string().describe("The name of the character"),
@@ -32,19 +33,19 @@ export const characterCreationStep = createStep({
 
     try {
 
-      result = await charCreationTool.execute({
-        // @ts-ignore
+      result = await charCreationTool.execute({context: {
         project: project,
         model: model,
+        name: name,
         description: description,
         characteristics: characteristics,
         situational: situational,
         pose: pose,
         style: style,
         mood: mood,
-        aspectRatio: "4x3",
+        aspectRatio: "4:3",
         numImages: 1
-      })
+      }, mastra, runtimeContext: new RuntimeContext()});
     } catch (e: unknown) {
       throw new Error(`Failed to get response from Character  Creation tool: ${e}`)
     }

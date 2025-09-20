@@ -26,7 +26,7 @@ export class Project {
   }
 
   private static createFile(data: Buffer, fileName: string, format: "png" | "jpeg", ...args: string[]){
-    const p = path.join(this.BASE_PATH, ...args, fileName + `-${Date.now}.${format}`);
+    const p = path.join(this.BASE_PATH, ...args, fileName + `-${Date.now()}.${format}`);
     try {
       fs.writeFileSync(p, data);
     } catch (e: unknown){

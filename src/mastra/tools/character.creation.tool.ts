@@ -190,6 +190,7 @@ export const characterImageGenerationTool = createTool({
 - **Character Posing**: You take extra case to pose the character as requested;
 - **Anatomically Correct**: you have extra attention to hands, arms, legs, feet, to ensure they respect the character's anatomy;
 - **Pure White Backgrounds**: you specialize in making representation of the characters in given poses  for reference purposes (eg Character Sheet) so always put them against pure white background
+- **Framing**: unless specified otherwise, you always create full body images
 
 ## Image Generation Guidelines
 - **CRITICAL STYLE RULES**:
@@ -244,15 +245,20 @@ ${mood ? `## Mood\n${mood}` : ""}
         console.log(`🚀 [Character Generation Tool] Calling generateSceneImage...`);
         imageData = await generateCharacterImage(imagePrompt, {
           model: model,
-          format: "jpeg",
+          format: "png",
           quality: "medium",
           size: "1024x1024"
         });
         console.log(`✅ [Character Generation Tool] Image data received (${imageData.imageData.length} characters)`);
 
+        const matches = imageData.imageData.match(/^data:(.+);base64,(.*)$/);
+        if (!matches) {
+          throw new Error("Invalid base64 image string");
+        }
+
         // Save image locally
         console.log(`💾 [Character Generation Tool] Saving character to project ${project}`);
-        const localImagePath = Project.storeCharacter(Buffer.from(imageData.imageData, "base64"), project, name, pose, "jpeg")
+        const localImagePath = Project.storeCharacter(Buffer.from(matches[2], "base64"), project, name, pose, "png")
         console.log(`✅ [Character Generation Tool] Image saved locally: ${localImagePath}`);
 
         const imageMetadata = {

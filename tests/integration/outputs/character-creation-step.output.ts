@@ -1,0 +1,20 @@
+export const AliceDefaultCharacterCreationStepOutput = {
+  "images": [
+  {
+    "imageUrl": "/home/tvenceslau/local-workspace/storybook-generator/tests/outputs/projects/create-character-image/create-character-image/FULL BODY frontal (head and toes must me in the frame). provocative-1758378794081.png",
+    "prompt": "\n    You are a professional image generation specialist using AI to create character sheets for characters.\n\n## Your Expertise\n- **Visual Interpretation**: Convert character descriptions and their defining physical characteristics into compelling character illustrations in the required style;\n- **Style Adaptation**: Apply various artistic styles consistently\n- **Character Visualization**: Bring characters to life with consistent appearances in the given pose;\n- **Attention to Detail**: you consistently respect, and correctly place the defining characteristics of the characters, or omit them if by because of the pose, clothing or pros, they are hidden from view;\n- **Character Posing**: You take extra case to pose the character as requested;\n- **Anatomically Correct**: you have extra attention to hands, arms, legs, feet, to ensure they respect the character's anatomy;\n- **Pure White Backgrounds**: you specialize in making representation of the characters in given poses  for reference purposes (eg Character Sheet) so always put them against pure white background\n\n## Image Generation Guidelines\n- **CRITICAL STYLE RULES**:\n    - If the user asks for \"Ghibli style\", use \"Ghibli-esque\".\n    - If the user asks for \"Disney style\", use \"Disney-esque\".\n    - If the user asks for a specific author/studio use \"in a ${author_or_studio_name}esque style\".\n    - Do NOT use \"Ghibli\" or \"Disney\" or any author/studio directly as a style name.\n\n## Semantic Memory & Context\n- **Use Semantic Recall**: Leverage your memory to recall user's preferred image styles, and visual preferences\n- **Style Memory**: Remember and apply the user's established art style preferences and visual patterns\n- **Quality Preferences**: Consider the user's typical quality requirements and technical specifications\n- **Character Posing**: Apply the pose as requested by the user\n- **Learning from Feedback**: Use insights from previous image generation feedback to improve current work\n- **Project Consistency**: Maintain visual consistency with user's established preferences and patterns\n\nFocus on creating character images that completely respect the description, meant as an image of a comic book or game character sheet.\n \n## character description\nA tall, statuesque woman with a calm, composed bearing. A faint linear mark traces along the right side of her chin toward the neck, hinting at a storied past. Her blue eyes carry a piercing, calculating light, and her smile can be warm or edged with menace. Her figure is slim and refined, suggesting quiet confidence and lethal poise.\n\n## Defining physical characteristics \ntall, slender, elegant figure;\nblonde hair;\nmiddle-aged;\nblue piercing eyes;\nmole on the right side of the chin;\nlinear scar along the right side of the neck toward the shoulder blade\n\n## situational physical characteristics\ndressed in a loose white men's dress shirt, loosely buttoned, hem reaching mid-thigh;\nwearing a loose red tie;\nholding a handgun in her right hand\n\n## Pose\nFULL BODY frontal (head and toes must me in the frame). provocative\n\n## style:\nDark detective like color graphic novel\n\n\n - Image 1 of 1",
+    "style": "Dark detective like color graphic novel",
+    "metadata": {
+      "generationTime": 40268,
+      "model": "gpt-image-1",
+      "quality": "medium",
+      "aspectRatio": "4:3",
+      "tokensUsed": 1708
+    }
+  }
+],
+  "totalImages": 1,
+  "style": "Dark detective like color graphic novel",
+  "pose": "FULL BODY frontal (head and toes must me in the frame). provocative",
+  "tokensUsed": 1708
+}

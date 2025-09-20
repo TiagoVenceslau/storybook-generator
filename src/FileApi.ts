@@ -67,7 +67,7 @@ export class FileApi {
   }
 
   static extension(p: string){
-    return path.extname(p);
+    return path.extname(p).substring(1);
   }
 
   static replaceExtension(p: string, ext: string){

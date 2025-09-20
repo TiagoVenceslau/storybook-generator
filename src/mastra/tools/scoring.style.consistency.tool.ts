@@ -1,4 +1,4 @@
-import { Tool } from "@mastra/core";
+import { Tool } from "@mastra/core/tools";
 import OpenAI from "openai";
 import z from "zod";
 import { Score } from "./types";

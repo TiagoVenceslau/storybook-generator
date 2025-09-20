@@ -3,6 +3,9 @@ dotev.config();
 
 import { CharacterEnrichmentAgent } from "../../../src/mastra/agents/character.enrichment.agent";
 import { AliceDefault, Character } from "../characters";
+import { setTestFsBasePath } from "../mastra";
+
+setTestFsBasePath()
 
 const agentName = "character-enrichment-agent";
 

@@ -1,4 +1,4 @@
-import { Tool, ToolExecutionContext } from "@mastra/core";
+import { Tool, ToolExecutionContext } from "@mastra/core/tools";
 import OpenAI from "openai";
 import {z} from "zod"
 

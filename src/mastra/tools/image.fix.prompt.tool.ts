@@ -1,4 +1,5 @@
-import { GenerateTextResult, Tool } from "@mastra/core";
+import { GenerateTextResult } from "@mastra/core";
+import { Tool } from "@mastra/core/tools";
 import { z } from "zod";
 import { ScoreReason } from "./types";
 

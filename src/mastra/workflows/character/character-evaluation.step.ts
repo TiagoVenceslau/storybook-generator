@@ -5,6 +5,8 @@ import { Tool } from "@mastra/core";
 import { CharacterConsistencyScorer } from "../../tools/scoring.character.consistency.tool";
 import { StyleConsistencyScorer } from "../../tools/scoring.style.consistency.tool";
 import { PoseConsistencyScorer } from "../../tools/scoring.pose.consistency.tool";
+import { FileApi } from "../../../FileApi";
+import fs from "fs";
 
 export const characterEvaluationStep = createStep({
   id: 'character-evaluation-step',
@@ -28,15 +30,18 @@ export const characterEvaluationStep = createStep({
   }),
   execute: async ({ inputData, mastra, runtimeContext }) => {
 
-    const {metric, style, threshold, imageUrl, references} = inputData;
+    const {metric, imageUrl } = inputData;
+
+    let buffer: Buffer;
+    try  {
+      buffer = fs.readFileSync(imageUrl);
+    } catch (e: unknown) {
+      throw new Error(`Could not read file ${imageUrl}`);
+    }
+
+    const format = FileApi.extension(imageUrl);
 
     let tool: Tool<any, any, any>;
-    let input: any = {
-      threshold: threshold,
-      style: style,
-      image: imageUrl,
-      references: references
-    };
     switch (metric) {
       case "character":
         tool = CharacterConsistencyScorer;
@@ -55,7 +60,10 @@ export const characterEvaluationStep = createStep({
     let result: any;
     try {
       result = await tool.execute({
-        context: input,
+        context: Object.assign({}, inputData, {
+          format: format,
+          image: buffer,
+        }),
         mastra: mastra,
         runtimeContext: runtimeContext
       });

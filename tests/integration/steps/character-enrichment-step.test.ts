@@ -3,9 +3,11 @@ dotev.config();
 import { Mastra, Run, Workflow } from "@mastra/core";
 import { createWorkflow } from "@mastra/core/workflows";
 import { characterEnrichmentStep } from "../../../src/mastra/workflows/character/character-enrichment.step";
-import { getMastraForTest } from "../mastra";
+import { getMastraForTest, setTestFsBasePath } from "../mastra";
 import { AliceDefault, Character } from "../characters";
 import { CharacterEnrichmentAgent } from "../../../src/mastra/agents/character.enrichment.agent";
+
+setTestFsBasePath()
 
 const stepName = "character-enrichment-step";
 const step = characterEnrichmentStep;

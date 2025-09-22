@@ -2,7 +2,6 @@ import { createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import { ImageMetadata } from "../../tools/types";
 import { characterImageGenerationTool } from "../../tools/character.creation.tool";
-import { RuntimeContext } from "@mastra/core/runtime-context";
 import { OpenAIImageFormats, OpenAIImageModels, OpenAIImageQuality, OpenAIImageSize } from "../../constants";
 
 export const characterCreationStep = createStep({

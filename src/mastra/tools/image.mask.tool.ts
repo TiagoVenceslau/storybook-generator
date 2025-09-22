@@ -16,6 +16,8 @@ export const MaskImageTool = createTool({
   execute: async ({ context, mastra }) => {
     console.log('🛠️ [Image Mask Tool] Tool execution started...');
     const {imagePath, bbox} = context;
-    return ImageApi.mask(imagePath, bbox);
+
+    const expanded = ImageApi.letterBox(bbox, 70)
+    return ImageApi.mask(imagePath, expanded);
   },
 });

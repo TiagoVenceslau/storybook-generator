@@ -2,6 +2,7 @@ import { BBox } from "./mastra/tools/types";
 import { z } from "zod";
 import sharp from "sharp";
 import path from "path";
+import fs from "fs";
 type BoundingBox = z.infer<typeof BBox>;
 
 export class ImageApi {
@@ -39,7 +40,27 @@ export class ImageApi {
       h: Math.max(0, maxY - minY),
     };
   }
-  
+
+  static letterBox(bbox: BoundingBox, margin: number = 70): BoundingBox {
+
+    if (margin < 0) throw new Error("Margin must be non-negative");
+
+    // Add margin to all sides
+    return {
+      x: Math.max(0, bbox.x - margin),
+      y: Math.max(0, bbox.y - margin),
+      w: bbox.w + (2 * margin), // Add margin to both left and right
+      h: bbox.h + (2 * margin), // Add margin to both top and bottom
+    };
+  }
+
+  static async sizeAndOrientation(img: Buffer){
+    const oriented = await sharp(img).rotate().toBuffer(); // auto-orient by EXIF
+    const meta = await sharp(oriented).metadata();
+    const W = meta.width!, H = meta.height!;
+    return { oriented, W, H };
+  }
+
   static async mask(imagePath: string, bbox: BoundingBox){
     const { width, height } = await sharp(imagePath).metadata();
     if (!width || !height) throw new Error("Could not read image dimensions.");
@@ -58,10 +79,23 @@ export class ImageApi {
     </svg>
   `.trim();
 
-    const output = path.join(
+    let output = path.join(
       path.dirname(imagePath),
       path.basename(imagePath, path.extname(imagePath)) + `.mask.png`
     );
+    let counter = 0;
+
+    do {
+      try {
+        fs.statSync(output)
+      } catch (e: unknown) {
+        break;
+      }
+      output = path.join(
+        path.dirname(imagePath),
+        path.basename(imagePath, path.extname(imagePath)) + `.mask_${counter++}.png`)
+    } while(true)
+
 
     // Important: output must be PNG for the mask (with alpha channel).
     await sharp(Buffer.from(svg))

@@ -40,13 +40,20 @@ export async function editImage(imagePath: string, imageMask: string, prompt: st
 
   try {
 
-    // Generate exactly one image (AI SDK will batch if needed)
+    function toFile(filePath: string){
+      return new File([Buffer.from(fs.readFileSync(filePath))], FileApi.fileName(filePath), { type: `image/${FileApi.extension(filePath)}` });
+    }
+
+    const files = [imagePath, ...references || []].map(f => toFile(f));
+    const mask = toFile(imageMask);
+
+    // Generate exactly one image (AI SDK will batch if needed)\
     const result = await openai.images.edit({
-      image: !references ? fs.createReadStream(imagePath) : [imagePath, ...references].map(p => fs.createReadStream(p)),
+      image: files,
       prompt: prompt,
       background: opts.background as "opaque" | "transparent" | "auto",
       input_fidelity: opts.fidelity as "high" | "low",
-      mask: fs.createReadStream(imageMask),
+      mask: mask,
       model: opts.model,
       n: 1,
       output_format: opts.format as "jpeg"
@@ -72,11 +79,12 @@ export async function editImage(imagePath: string, imageMask: string, prompt: st
 
 }
 
-export const imageEditTool = createTool({
+export const ImageEditTool = createTool({
   id: 'edit-image-tool',
   description: 'Performs a selective edit on a given image, using a given prompt and a given image mask file',
   inputSchema: z.object({
     prompt: z.string().describe("the edit to apply to the selected part of the image"),
+
     imagePath: z.string().describe("the image file path"),
     maskImage: z.string().describe("the mask image to use"),
     fidelity: z.enum(Object.values(OpenAIEditFidelity) as any).default(OpenAIEditFidelity.high).describe("The fidelity to the original image"),
@@ -110,11 +118,11 @@ export const imageEditTool = createTool({
 ## Image Generation Guidelines
 - **CRITICAL STYLE RULES**:
     - You maintain the overall look and feel of the image unless specified otherwise.
-
+- **CRITICAL RULES**: Only affect change of the provided mask
 ## Changes to Apply:
 ${prompt}
 
-${references ? `
+${references && references.length ? `
 ## IMPORTANT
  - the first image is the image to edit;
  - the remaining images are reference images;
@@ -136,8 +144,14 @@ Return the corrected image  without questions.`
       }, references);
       console.log(`✅ [Image Edit Tool] Image data received (${imageData.imageData.length} characters)`);
 
+
+      const matches = imageData.imageData.match(/^data:(.+);base64,(.*)$/);
+      if (!matches) {
+        throw new Error("Invalid base64 image string");
+      }
+
       // Save image locally
-      const localImagePath = FileApi.createVariation(FileApi.replaceExtension(imagePath, "png"), Buffer.from(imageData.imageData, "base64"), "edit")
+      const localImagePath = FileApi.createVariation(imagePath, Buffer.from(matches[2], "base64"), "edit")
       console.log(`✅ [Image Edit Tool] Image saved locally: ${localImagePath}`);
 
       const imageMetadata = {

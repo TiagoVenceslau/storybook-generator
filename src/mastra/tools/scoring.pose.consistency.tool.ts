@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import {z} from "zod"
 import { Score } from "./types";
 import { OpenAIImageFormats } from "../constants";
+import { ImageApi } from "../../ImageApi";
 
 const client = new OpenAI();
 
@@ -19,13 +20,19 @@ export const PoseConsistencyScorer = new Tool({
   outputSchema: z.record(z.string(), Score).describe("a record of all defects and their scores"),
   execute: async ({context}) => {
     const { image, pose, references, format, threshold } = context;
+    const {oriented, W, H } = await ImageApi.sizeAndOrientation(image)
+
     const res = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
           content: `You are an character pose image scoring assistant. You are an expert at evaluating images of characters, 
-          evaluating the position they're in and match it against a pose description. You take extra attention to the anatomy of a character to ensure it's correct.
+evaluating the position they're in and match it against a pose description. You take extra attention to the anatomy of a character to ensure it's correct.
+You are a specialist in, when a defect is found, extract a minimal bounding box (bbox) around the defect for later edit.
+IT MUST COMPLETELY COVER THE DEFECT.
+
+Bounding box format: xywh, top-left origin, y-down.
 
 Rate character consistency (0-1), provide reason, and bounding box if applicable.
 
@@ -49,10 +56,10 @@ all ratings should be returned as JSON: {
     {
       "reason": "string describing the reason for the lower score"
       "bbox": {
-        "x": leftmost x coordinate ob the bounding box,
-        "y": upmost y coordinate of the bounding box,
-        "h": the height of the bounding box,
-        "w": "the width of the bounding box
+        "x": leftmost x coordinate in pixels of the bounding box (x axis points right),
+        "y": upmost y coordinate in pixels of the bounding box (y axis points down),
+        "h": the height in pixels of the bounding box,
+        "w": "the width in pixels of the bounding box
       }
     }
   ]
@@ -90,7 +97,7 @@ Return ony json. no markdown
 ## Character Pose description
 ${pose}
 
-## Image to evaluate
+## Image to evaluate (height: ${H}px, width: ${W}px
 `},
     // @ts-ignore
             { type: "image_url", image_url: {url:`data:image/${format};base64,` + image.toString("base64") }},

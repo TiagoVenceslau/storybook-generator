@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import {z} from "zod"
 import { OpenAIImageFormats } from "../constants";
 import { Score } from "./types";
+import { ImageApi } from "../../ImageApi";
 
 const client = new OpenAI();
 
@@ -21,6 +22,9 @@ export const CharacterConsistencyScorer = new Tool({
   outputSchema: z.record(z.string(), Score).describe("a record of all defects and their scores"),
   execute: async ({context}) => {
     const { image, description, characteristics, situational, references, format, threshold } = context;
+
+    const {oriented, W, H } = await ImageApi.sizeAndOrientation(image)
+
     const res = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -31,6 +35,10 @@ and match them against their physical description. You take extra attention to a
 to the correct anatomy of a character.
 You are also capable of evaluating against reference images of the character and identify missed/incorrect features.
 You recognize when specific features are hidden from view due to the perspective, shot type or character position and ignore then in your evaluation.
+You are a specialist in, when a defect is found, extract a minimal bounding box (bbox) around the defect for later edit.
+IT MUST COMPLETELY COVER THE DEFECT OR THE AREA WHERE A FEATURE IS MISSING.
+
+Bounding box format: xywh, top-left origin, y-down.
 
 When you find missing physical features, you check again to see if it's a matter of perspective, framing, or lighting. If so, ignore it.
 
@@ -58,14 +66,16 @@ all ratings should be returned as JSON: {
     {
       "reason": "string describing the reason for the lower score"
       "bbox": {
-        "x": leftmost x coordinate ob the bounding box,
-        "y": upmost y coordinate of the bounding box,
-        "h": the height of the bounding box,
-        "w": "the width of the bounding box
+        "x": leftmost x coordinate in pixels of the bounding box (x axis points right),
+        "y": upmost y coordinate in pixels of the bounding box (y axis points down),
+        "h": the height in pixels of the bounding box,
+        "w": "the width in pixels of the bounding box
       }
     }
   ]
 }
+
+all bbox values are relative to ORIGINAL oriented image size
 
 respond with JSON only! never include any markdown format!
 
@@ -77,25 +87,18 @@ respond with JSON only! never include any markdown format!
     "score": 0.86,
     "reasons": [{
       "reason": "the tie should be blue, not black",
-      "bbox": {"x": 34, "y": 56, "h": 235, "w": 89}
+      "bbox": // coordinates to the bounding box of the tie
     },
     {
       "reason": "the should are not formal shoes.",
-      "bbox": {"x": 67, "y": 508, "h": 132, "w": 134}
+      "bbox": // coordinates to the bounding box of the shoes
     }]
   },
   "body": {
     "score": 0.82,
     "reasons": [{
       "reason": "the right hand has 6 fingers instead of 5",
-      "bbox": {"x": 67, "y": 304, "h": 50, "w": 89}
-    }]
-  },
-  "features": {
-    "score": 0.78,
-    "reasons": [{
-      "reason": "character is not holding a gun in the right hand",
-      "bbox": {"x": 204, "y": 286, "h": 40, "w": 79}
+      "bbox": // coordinates to the bounding box of the right hand
     }]
   }
 }`,
@@ -111,11 +114,11 @@ ${characteristics && characteristics.length ? `## Defining physical characterist
 
 ${situational && situational.length ? `## Situational physical characteristics\n${situational.join(";\n")}` : ""}
 
-## Image to evaluate
+## Image to evaluate (height: ${H}px, width: ${W}px
 
 `},
     // @ts-ignore
-            { type: "image_url", image_url: {url: `data:image/${format};base64,` + image.toString("base64") }},
+            { type: "image_url", image_url: {url: `data:image/${format};base64,` + oriented.toString("base64") }},
             ...(references  && references.length ? [
               {type: "text", text: "\n## References images\n"},
               ...references.map((r,i) => {

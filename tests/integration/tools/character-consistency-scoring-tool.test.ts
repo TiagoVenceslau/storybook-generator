@@ -8,6 +8,7 @@ import { CharacterConsistencyScorer } from "../../../src/mastra/tools/scoring.ch
 import { AliceDefaultCharacterCreationStepOutput } from "../outputs/character-creation-step.output";
 import { Score } from "../../../src/mastra/tools/types";
 import fs from "fs";
+import { ImageApi } from "../../../src/ImageApi";
 
 setTestFsBasePath()
 
@@ -19,10 +20,12 @@ const toolName = tool.id;
 
 describe(toolName, () => {
 
-  it("should run", async () => {
+  let defects: any;
 
-    const character = AliceCharacterEnrichmentStepOutput
-    const image = AliceDefaultCharacterCreationStepOutput;
+  const character = AliceCharacterEnrichmentStepOutput
+  const image = AliceDefaultCharacterCreationStepOutput;
+
+  it("should run", async () => {
 
     const input = {
       description: character.description,
@@ -41,5 +44,16 @@ describe(toolName, () => {
     } as any));
 
     expect(result).toBeDefined();
+    defects = result;
+  })
+  it("should extract  valid bounding boxes", async () => {
+
+    for (const key in defects) {
+      let defect = defects[key as keyof typeof defects];
+      if (!defect.reasons) continue;
+      for (const reason of defect.reasons) {
+        const {maskPath} =  await ImageApi.mask(image.images[0].imageUrl, reason.bbox)
+      }
+    }
   })
 });

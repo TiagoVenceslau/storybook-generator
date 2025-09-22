@@ -49,13 +49,13 @@ export class FileApi {
   static createFile(p: string, data: Buffer){
     if (this.fileExists(p))
       throw new FileConflict(`file ${p} does already exists`);
-    return fs.writeFileSync(p, data, {mode: "utf-8"});
+    return fs.writeFileSync(p, data);
   }
 
   static updateFile(p: string, data: Buffer){
     if (!this.fileExists(p))
       throw new FileNotFound(`file ${p} does not exist`);
-    return fs.writeFileSync(p, data, {mode: "utf-8"});
+    return fs.writeFileSync(p, data);
   }
 
   static dirname(p: string){

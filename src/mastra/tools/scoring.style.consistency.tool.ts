@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import z from "zod";
 import { Score } from "./types";
 import { OpenAIImageFormats } from "../constants";
+import { ImageApi } from "../../ImageApi";
 
 const client = new OpenAI();
 
@@ -21,6 +22,7 @@ export const StyleConsistencyScorer = new Tool({
   }),
   execute: async ({context}) => {
     const { image, style, references, threshold, format } = context;
+    const {oriented, W, H } = await ImageApi.sizeAndOrientation(image)
 
     const res = await client.chat.completions.create({
       model: "gpt-4o",
@@ -28,8 +30,12 @@ export const StyleConsistencyScorer = new Tool({
         {
           role: "system",
           content: `
-          You are an style image scoring assistant. You are an expert at evaluating the adherence of and image to an art style,
+You are an style image scoring assistant. You are an expert at evaluating the adherence of and image to an art style,
 given an art style, or it's description, but also against reference images and identify inconsistencies.
+You are a specialist in, when a defect is found, extract a minimal bounding box (bbox) around the defect for later edit.
+IT MUST COMPLETELY COVER THE DEFECT.
+
+Bounding box format: xywh, top-left origin, y-down.
 
 Rate character consistency (0-1), provide reason, and bounding box if applicable.
 
@@ -56,10 +62,10 @@ Rating should be returned as JSON: {
     {
       "reason": "string describing the reason for the lower score"
       "bbox": {
-        "x": leftmost x coordinate ob the bounding box,
-        "y": upmost y coordinate of the bounding box,
-        "h": the height of the bounding box,
-        "w": "the width of the bounding box
+        "x": leftmost x coordinate in pixels of the bounding box (x axis points right),
+        "y": upmost y coordinate in pixels of the bounding box (y axis points down),
+        "h": the height in pixels of the bounding box,
+        "w": "the width in pixels of the bounding box
       }
     }
   ]
@@ -70,18 +76,19 @@ Rating should be returned as JSON: {
   "score": 0.52,
   "reasons": [{
     "reason": "the line weight is noticeably different in all image",
-    "bbox": {"x": 0, "y": 0, "h": 1024, "w": 1024}
+    "bbox": // bounding box for the whole image 
   },
   {
     "reason": "the contrast if very different from the style",
-    "bbox": {"x": 67, "y": 508, "h": 132, "w": 134}
+    "bbox": // bounding box for the specific defect's location
   }]
 }`,
         },
         {
           role: "user",
           content: [
-            { type: "text", text: `Evaluate how closely this matches style: ${style}` },
+            { type: "text", text: `## Image to evaluate (height: ${H}px, width: ${W}px
+\nEvaluate how closely this matches style: ${style}` },
             // @ts-ignore
             { type: "image_url", image_url: {url:`data:image/${format};base64,` + image.toString("base64") }},
             ...(references  && references.length ? [

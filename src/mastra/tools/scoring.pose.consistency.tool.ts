@@ -58,6 +58,8 @@ all ratings should be returned as JSON: {
   ]
 }
 
+Return ony json. no markdown
+
 ### Example output:
 {
   "body": {"score": 0.96}, // near perfect body and limb positioning match but still above ${threshold} so no reasons are necessary

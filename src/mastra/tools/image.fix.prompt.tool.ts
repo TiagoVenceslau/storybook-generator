@@ -2,6 +2,7 @@ import { GenerateTextResult } from "@mastra/core";
 import { Tool } from "@mastra/core/tools";
 import { z } from "zod";
 import { ScoreReason } from "./types";
+import { ImageFixPromptAgent } from "../agents/image.fix.prompt.agent";
 
 export const ImageFixPromptTool = new Tool({
   id: 'image-edit-prompt-tool',
@@ -12,22 +13,26 @@ export const ImageFixPromptTool = new Tool({
   outputSchema: z.object({
     prompt: z.string().describe("The generated prompt, meant to pass an Image editing LLM or Toll to selectively fixing the image without compromising style or consistency")
   }),
-  execute: async ({ context, mastra }) => {
+  execute: async ({ context, mastra, runtimeContext, runId }) => {
     const {score} = context;
-    if (!mastra)
-      throw new Error(`mastra not found in tool`)
-    const agent = mastra.getAgent("imageFixPromptAgent");
+    const agent = ImageFixPromptAgent
     let result: GenerateTextResult<any>;
     try {
-      result = await agent.generate(`## defect: ${score.reason}`)
+      result = await agent.generate(`## defect: ${score.reason}`, {
+        runId: runId,
+        runtimeContext: runtimeContext
+      })
     } catch (e: unknown) {
       throw new Error(`failed to receive response from imageFixPromptAgent: ${e}`)
     }
 
     const {usage, text} = result;
 
-    return {
-      prompt: text
+    try  {
+      const json = JSON.parse(text);
+      return json;
+    } catch (e: unknown) {
+      throw new Error("Unable to deserialize response")
     }
   }
 })

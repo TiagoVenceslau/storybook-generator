@@ -87,7 +87,7 @@ export const characterImageGenerationTool = createTool({
     style: z.string().describe('The style that was applied'),
     pose: z.string().describe('The pose that was applied'),
   }),
-  execute: async ({ context, mastra, runtimeContext }) => {
+  execute: async ({ context, mastra, runtimeContext, runId }) => {
     console.log('🛠️ [Character Generation Tool] Tool execution started...');
     console.log(`📋 [Character Generation Tool] Input context:`, Object.assign({}, context, {
       description: context.description.substring(0, 100) + "..."

@@ -15,6 +15,12 @@ export const ImageFixDefectStep  = createStep({
   description: "Given a defect and it's bounding box, perform an image edit to fix the defect",
   inputSchema: z.object({
     prompt: z.string().describe("the prompt to use to fix the image"),
+    description: z.string().describe("The overall description of the image"),
+    characteristics: z.array(z.string()).optional().describe("a list of the character's defining physical characteristics, eg: factial features, hair, scars, body types, height, tattoos, scars, etc, os a scene's main features"),
+    situational: z.array(z.string()).optional().describe("a list of situational features (features than may belong to the image in a specific situation, but not always"),
+    pose: z.string().optional().describe("the pose of eventual characters in the image"),
+    style: z.string().default("Graphic Novel").describe("The art style to apply"),
+    mood: z.string().optional().describe("The overall mood to apply to the image"),
     imagePath: z.string().describe("the image file path"),
     maskImage: z.string().describe("the mask image to use"),
     fidelity: z.enum(Object.values(OpenAIEditFidelity) as any).default(OpenAIEditFidelity.high).describe("The fidelity to the original image"),
@@ -30,12 +36,18 @@ export const ImageFixDefectStep  = createStep({
     metadata: ImageMetadata.optional()
   }),
   execute: async ({inputData, mastra, runtimeContext,  runId}) => {
-    const {prompt, imagePath, maskImage, model, format, fidelity, references, background, quality} = inputData;
+    const {prompt, imagePath, maskImage, model, description, characteristics, situational, pose, style, mood, format, fidelity, references, background, quality} = inputData;
     const editTool = ImageEditTool;
     let edit: z.infer<typeof editTool.outputSchema>;
     try {
       edit = await editTool.execute({context: {
         prompt: prompt,
+        description: description,
+        characteristics: characteristics,
+        situational: situational,
+        pose: pose,
+        style: style,
+        mood: mood,
         imagePath: imagePath,
         maskImage: maskImage,
         fidelity: fidelity,

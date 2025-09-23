@@ -51,7 +51,7 @@ export async function editImage(imagePath: string, imageMask: string, prompt: st
     const result = await openai.images.edit({
       image: files,
       prompt: prompt,
-      background: opts.background as "opaque" | "transparent" | "auto",
+      background: opts.format === "jpeg" ? "opaque" : opts.background as "opaque" | "transparent" | "auto",
       input_fidelity: opts.fidelity as "high" | "low",
       mask: mask,
       model: opts.model,
@@ -84,7 +84,12 @@ export const ImageEditTool = createTool({
   description: 'Performs a selective edit on a given image, using a given prompt and a given image mask file',
   inputSchema: z.object({
     prompt: z.string().describe("the edit to apply to the selected part of the image"),
-
+    description: z.string().describe("The overall description of the image"),
+    characteristics: z.array(z.string()).optional().describe("a list of the character's defining physical characteristics, eg: factial features, hair, scars, body types, height, tattoos, scars, etc, os a scene's main features"),
+    situational: z.array(z.string()).optional().describe("a list of situational features (features than may belong to the image in a specific situation, but not always"),
+    pose: z.string().optional().describe("the pose of eventual characters in the image"),
+    style: z.string().default("Graphic Novel").describe("The art style to apply"),
+    mood: z.string().optional().describe("The overall mood to apply to the image"),
     imagePath: z.string().describe("the image file path"),
     maskImage: z.string().describe("the mask image to use"),
     fidelity: z.enum(Object.values(OpenAIEditFidelity) as any).default(OpenAIEditFidelity.high).describe("The fidelity to the original image"),
@@ -102,7 +107,7 @@ export const ImageEditTool = createTool({
   execute: async ({ context, mastra }) => {
     console.log('🛠️ [Image Edit Tool] Tool execution started...');
 
-    const { prompt, imagePath, maskImage, model, background, fidelity, format, quality, references } = context;
+    const { prompt, imagePath, maskImage, model, description, characteristics, situational, pose, style, mood, background, fidelity, format, quality, references } = context;
 
     const p = `
     You are a professional image edition specialist using AI to make selective changes to images according to a provided request.
@@ -118,9 +123,31 @@ export const ImageEditTool = createTool({
 ## Image Generation Guidelines
 - **CRITICAL STYLE RULES**:
     - You maintain the overall look and feel of the image unless specified otherwise.
-- **CRITICAL RULES**: Only affect change of the provided mask
+- **CRITICAL RULES**: 
+    - Only affect change of the provided mask;
+    - You evaluate the description of the original image given to and maintain consistency with it in your edits;
+    - You always include the character's defining characteristics in your edits when they apply, but also know when to omit them because they are hidden from view;
+    - You always include the situational features as described, when given and applicable;
+    - you respect character poses when they are provided;
+    - you respect the provided style when moods when provided;
+    - when provided references, you include them in you evaluation and use them as references or as otherwise specified by the user;
+    - if you cannot perform the select change on the mask you are given, return "MASK ERROR";
+    - Your respect all the above rules, but are still proficient making the requested edits;
+
 ## Changes to Apply:
 ${prompt}
+
+## description of original image
+${description}
+
+${characteristics ? `## Image's defining characteristics\n${characteristics.join(";\n")}` : ""}
+${situational ? `## Image's situational characteristics\n${situational.join(";\n")}` : ""}
+${pose ? `## Pose\n${pose}` : ""}
+
+## style:
+${style}
+
+${mood ? `## Mood\n${mood}` : ""}
 
 ${references && references.length ? `
 ## IMPORTANT

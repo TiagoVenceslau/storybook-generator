@@ -43,7 +43,7 @@ export class FileApi {
   static readFile(p: string){
     if (!this.fileExists(p))
       throw new FileNotFound(`file ${p} does not exist`);
-    return fs.readFileSync(p, 'utf-8');
+    return fs.readFileSync(p);
   }
 
   static createFile(p: string, data: Buffer){
@@ -82,9 +82,9 @@ export class FileApi {
     const dir = this.dirname(p);
     const fileName = this.fileName(p, true);
     const ext = this.extension(p);
-    const regexp = new RegExp(`([0-9]+)$`);
+    const regexp = new RegExp(`([0-9]+)\.\w+$`);
     const match = regexp.exec(fileName);
-    const number = match ? parseInt(match[1]) : 1;
+    const number = match ? parseInt(match[1]) : 0;
     const newFileName = `${fileName}${suffix ? `-${suffix}-` : "-"}${number + 1}.${ext}`;
     const newPath = path.join(dir, newFileName);
     this.createFile(newPath, data);

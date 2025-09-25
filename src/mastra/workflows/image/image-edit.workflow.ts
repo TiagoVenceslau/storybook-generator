@@ -1,10 +1,17 @@
 import { createWorkflow } from "@mastra/core/workflows";
 import { z } from "zod";
-import { ImageMetadata, Score, ScoreReason } from "../../tools/types";
-import { OpenAIImageFormats, OpenAIImageModels, OpenAIImageQuality, OpenAIImageSize } from "../../constants";
-import { characterEvaluationStep } from "../character/character-evaluation.step";
-import { characterCreationStep } from "../character/character-creation.step";
-import { metricAggregationStep } from "../character/metric-aggregation.step";
+import { ImageMetadata, ScoreReason } from "../../tools/types";
+import {
+  OpenAIEditFidelity,
+  OpenAIImageFormats,
+  OpenAIImageModels,
+  OpenAIImageQuality,
+  OpenAIImageSize,
+} from "../../constants";
+import { ImageFixDefectPromptStep } from "./image-fix-defect-prompt.step";
+import { ImageFixMaskImageStep } from "./image-fix-mask-image.step";
+import { ImageApi } from "../../../ImageApi";
+import { ImageFixDefectStep } from "./image-fix-defect.step";
 
 export const ImageEditWorkflow = createWorkflow({
   id: 'image-edit-workflow',
@@ -13,9 +20,8 @@ export const ImageEditWorkflow = createWorkflow({
     project: z.string().default("miguel").describe("The project name (also where files are stored)"),
     style: z.string().describe('Visual style for image generation'),
     mood: z.string().optional().describe('the overall mood of the image'),
-    name: z.string().describe("The name of the character"),
     pose: z.string().default("Full body frontal, neutral pose, neutral expression, natural light").describe("the pose of the character"),
-    numImages: z.number().default(1).describe("The number of images to create"),
+    imagePath: z.string().describe("The path to the image to edit"),
     size: z.enum(Object.values(OpenAIImageSize) as any).optional().default(OpenAIImageSize.auto).describe("The size of the image to generate"),
     quality: z.enum(Object.values(OpenAIImageQuality) as any).optional().default(OpenAIImageQuality.low).describe("the quality of the image to generate"),
     format: z.enum(Object.values(OpenAIImageFormats) as any).optional().default(OpenAIImageFormats.jpeg).describe("the image format"),
@@ -25,7 +31,6 @@ export const ImageEditWorkflow = createWorkflow({
     model: z.enum(Object.values(OpenAIImageModels) as any).optional().default(OpenAIImageModels.GPT_IMAGE_1).describe("the image generation model to use"),
     fixes: z.array(ScoreReason).describe("a list of scores for each fix"),
     references: z.array(z.string()).optional().describe("a list of reference image paths"),
-    action: z.enum(["create", "edit"]).default("create").describe("whether to create or edit the character image"),
   }),
   outputSchema: z.object({
     images: z.array(ImageMetadata).describe('Array of generated images with local file paths'),
@@ -34,55 +39,50 @@ export const ImageEditWorkflow = createWorkflow({
     pose: z.string().describe('The pose that was applied'),
     model: z.string().describe("the model used")
   }),
-  steps: [characterCreationStep, characterEvaluationStep, metricAggregationStep]
+  steps: [ImageFixDefectPromptStep, ImageFixMaskImageStep]
 }).map(async ({inputData}) => {
-  return inputData;
-})
-  .branch([
-    [async ({inputData}) => inputData.action === "create", characterCreationStep],
-    [async ({inputData}) => inputData.action === "edit", characterCreationStep]
-  ])
-  .map(async ({inputData, getInitData})  => {
-    const {evaluationThreshold} = getInitData()
+  const {fixes} = inputData;
+  return fixes.map(s => {
     return {
-      character: Object.assign({}, inputData,  {
-        metric: "character",
-        threshold: evaluationThreshold
-      }),
-      style: Object.assign({}, inputData, {
-        metric: "style",
-        threshold: evaluationThreshold
-      }),
-      pose: Object.assign({}, inputData, {
-        metric: "pose",
-        threshold: evaluationThreshold
-      })
+      score: s
     }
   })
-  .parallel([characterEvaluationStep, characterEvaluationStep, characterEvaluationStep])
-  .map(async ({inputData, getInitData}) => {
-    const initData = getInitData();
-    const {threshold} = initData;
+}, {id: "map-to-scores"})
+  .foreach(ImageFixDefectPromptStep, {concurrency: 5})
+  .map(async ({inputData, getInitData, getStepResult}) => {
+    const {fixes, imagePath} = getInitData();
+
     return {
-      metrics: inputData,
-      currentIteration: 1,
-      maxIterations: 5,
-      regenThreshold: threshold - Math.floor((threshold - 50)/2),
-      fixThreshold: threshold
+      score: {
+        bbox: fixes.length > 1 ? ImageApi.addMask(fixes[0].bbox, fixes[1].bbox, ...fixes.slice(2).map((f: any) => f.bbox)) : fixes[0].bbox,
+      },
+      imagePath: imagePath
     }
-  })
-  .then(metricAggregationStep)
+  }, {id: "sum-masks-for-masking"})
+  .then(ImageFixMaskImageStep)
   .map(async ({getInitData, inputData, getStepResult}) => {
-    const input = getInitData()
-    let creationStep: any;
-    try {
-      creationStep = getStepResult("create-character-image" as any)
-    } catch (e: unknown) {
-      throw new Error(`Failed to retrieve results from character image creation step`, e as Error);
+    const initData = getInitData();
+    const prompts = (getStepResult(ImageFixDefectPromptStep) as unknown as any[]).map((prompt: any) => prompt.prompt).join(" and ");
+
+    // @ts-ignore
+    const lowestScore = initData.fixes.reduce((acc: number, fix: any) => Math.floor(acc, fix.score), 1)
+    return {
+      prompt: prompts,
+      description: initData.description,
+      characteristics: initData.characteristics,
+      situational: initData.situational,
+      pose: initData.pose,
+      style: initData.style,
+      mood: initData.mood,
+      imagePath: initData.imagePath,
+      maskImage: inputData.maskPath,
+      fidelity: lowestScore < 0.65 ? OpenAIEditFidelity.low : OpenAIEditFidelity.high,
+      model: initData.model,
+      quality: initData.quality,
+      format: initData.format,
+      background: initData.background,
+      references: initData.references,
     }
-    return Object.assign({}, inputData, creationStep, {
-      iterations: input.currentIteration,
-      model: input.model
-    })
-  })
+  }, {id: "map-for-editing"})
+  .then(ImageFixDefectStep)
   .commit()

@@ -40,7 +40,7 @@ export const createEditCharacterImageWorkflow = createWorkflow({
     pose: z.string().describe('The pose that was applied'),
     model: z.string().describe("the model used")
   }),
-  steps: [characterCreationStep, characterEvaluationStep, metricAggregationStep]
+  steps: [characterCreationStep, imageEdicharacterEvaluationStep, metricAggregationStep]
 }).map(async ({inputData}) => {
   return inputData;
 })

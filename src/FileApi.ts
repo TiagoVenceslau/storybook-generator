@@ -86,7 +86,18 @@ export class FileApi {
     const match = regexp.exec(fileName);
     const number = match ? parseInt(match[1]) : 0;
     const newFileName = `${fileName}${suffix ? `-${suffix}-` : "-"}${number + 1}.${ext}`;
-    const newPath = path.join(dir, newFileName);
+    let newPath = path.join(dir, newFileName);
+    let counter = 0;
+    do {
+      try {
+        fs.statSync(newPath)
+      } catch (e: unknown) {
+        break;
+      }
+      newPath = path.join(
+        path.dirname(p),
+        path.basename(p, path.extname(p)) + `.${suffix}-${counter++}.${ext}`)
+    } while(true)
     this.createFile(newPath, data);
     return newPath;
   }

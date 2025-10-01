@@ -4,6 +4,7 @@ import {z} from "zod"
 import { OpenAIImageFormats } from "../constants";
 import { Score } from "./types";
 import { ImageApi } from "../../ImageApi";
+import { safeParseJSON } from "../../utils";
 
 const client = new OpenAI();
 
@@ -135,7 +136,7 @@ ${situational && situational.length ? `## Situational physical characteristics\n
       temperature: 0.2
     } as any);
     try  {
-      const json = JSON.parse(res.choices[0].message.content || "{}");
+      const json = safeParseJSON(res.choices[0].message.content || "{}");
       return json;
     } catch (e: unknown) {
       throw new Error("Unable to deserialize response")

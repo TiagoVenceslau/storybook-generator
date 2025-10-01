@@ -24,7 +24,7 @@ export const ImageFixDefectStep  = createStep({
     quality: z.enum(Object.values(OpenAIImageQuality) as any).optional().default(OpenAIImageQuality.low).describe("the quality of the image to generate"),
     format: z.enum(Object.values(OpenAIImageFormats) as any).optional().default(OpenAIImageFormats.jpeg).describe("the image format"),
     background: z.enum(Object.values(OpenAIImageBackgrounds) as any).optional().default(OpenAIImageBackgrounds.auto).describe("the image format"),
-    references: z.array(z.string()).optional().describe("list of reference images"),
+    references: z.array(z.string()).or(z.record(z.string(), z.string())).optional().describe("a list of reference image paths"),
   }),
   outputSchema: z.object({
     imageUrl: z.string().describe('Local file path of the generated image'),

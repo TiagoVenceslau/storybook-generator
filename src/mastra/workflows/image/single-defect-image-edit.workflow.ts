@@ -25,7 +25,7 @@ export const ImageEditWorkflow = createWorkflow({
     situational: z.array(z.string()).optional().describe("a list of defining physical characteristics"),
     model: z.enum(Object.values(OpenAIImageModels) as any).optional().default(OpenAIImageModels.GPT_IMAGE_1).describe("the image generation model to use"),
     fix: ScoreReason.describe("the defect to fix"),
-    references: z.array(z.string()).optional().describe("a list of reference image paths"),
+    references: z.array(z.string()).or(z.record(z.string(), z.string())).optional().describe("a list of reference image paths"),
   }),
   outputSchema: z.object({
     images: z.array(ImageMetadata).describe('Array of generated images with local file paths'),

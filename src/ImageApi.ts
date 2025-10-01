@@ -3,11 +3,137 @@ import { z } from "zod";
 import sharp from "sharp";
 import path from "path";
 import fs from "fs";
+import { FileApi } from "./FileApi";
+import { OpenAI } from "openai";
+import { Logger, Logging } from "@decaf-ts/logging";
 type BoundingBox = z.infer<typeof BBox>;
 
 export class ImageApi {
   private constructor() {}
-  
+
+  private static _client?: OpenAI
+
+  protected static log: Logger = Logging.for("ImageApi")
+
+  protected static get client(){
+    const apiKey = process.env.OPENAI_API_KEY;
+    const log = this.log.for("client")
+    log.info('🔑 [ImageAPI] API key found, initializing OpenAI...');
+    if (!apiKey) {
+      log.error('❌ [ImageAPI] OPENAI_AKI_KEY not found in environment variables');
+      throw new Error('OPENAI_AKI_KEY not found in environment variables');
+    }
+    if (!this._client) {
+      this._client = new OpenAI({
+        apiKey: apiKey,
+      });
+    }
+    return this._client;
+  }
+
+  static async generateImage(prompt: string, opts = {
+    model: "gpt-image-1",
+    format: "jpeg",
+    quality: "medium",
+    size: "1024x1024",
+    background: "opaque"
+  }): Promise<{imageData: string, tokensUsed: number}> {
+    const log = this.log.for(this.generateImage)
+    log.info('🤖OpenAI provider initialized successfully');
+
+    log.info('🚀 Calling OpenAI Images API...');
+    const startTime = Date.now();
+
+    try {
+
+      // Generate exactly one image (AI SDK will batch if needed)
+      const result = await this.client.images.generate({
+        model: opts.model,
+        prompt: prompt,
+        n: 1,
+        size: opts.size as any,
+        quality: opts.quality as any,
+        output_format: opts.format as any,
+        background: opts.background as any,
+      });
+
+      const generationTime = Date.now() - startTime;
+      console.log(`✅ [Character Generation] API call completed in ${generationTime}ms`);
+
+      if (!result.data?.length || !result.data[0].b64_json) {
+        console.error("❌ [Character Generation] No image data returned");
+        throw new Error("Image generation failed: empty response");
+      }
+
+      const base64 = result.data[0].b64_json;
+      console.log("🖼️ [Character Generation] Received 1 generated image");
+      console.log(`📊 [Character Generation] Image data size: ${base64.length} characters`);
+      const { usage } = result
+      return {imageData: `data:image/${opts.format};base64,${base64}`, tokensUsed: usage?.total_tokens || -1}
+    } catch (error) {
+      console.error('❌ [Character Generation] Error during API call:', error);
+      throw error;
+    }
+  }
+
+  static async editImage(imagePath: string, imageMask: string, prompt: string, opts = {
+      model: "gpt-image-1",
+      format: "jpeg",
+      quality: "medium",
+      background: "auto",
+      fidelity: "high"
+    }, references?: string[] | Record<string, string>): Promise<{imageData: string, tokensUsed: number}> {
+
+    console.log('🤖 [Character Edit Tool] OpenAI provider initialized successfully');
+
+    console.log('🚀 [Character Edit Tool] Calling OpenAI Images API...');
+    const startTime = Date.now();
+
+    try {
+
+      function toFile(filePath: string){
+        return new File([Buffer.from(fs.readFileSync(filePath))], FileApi.fileName(filePath), { type: `image/${FileApi.extension(filePath)}` });
+      }
+
+      const refs = Array.isArray(references) ? references : Object.values(references || {});
+      const files = [imagePath, ...refs].map(f => toFile(f));
+      const mask = toFile(imageMask);
+
+      if (refs.length)
+        prompt = prompt + `\nThe first image is the image to edit, the remaining are references,\n${!Array.isArray(references) ? `## REFERENCES:\n${Object.keys(references as any)}` : ""}`
+
+      // Generate exactly one image (AI SDK will batch if needed)\
+      const result = await this.client.images.edit({
+        image: files,
+        prompt: prompt,
+        background: opts.format === "jpeg" ? "opaque" : opts.background as "opaque" | "transparent" | "auto",
+        input_fidelity: opts.fidelity as "high" | "low",
+        mask: mask,
+        model: opts.model,
+        n: 1,
+        output_format: opts.format as "jpeg"
+      })
+
+      const generationTime = Date.now() - startTime;
+      console.log(`✅ [Character Edit Tool] API call completed in ${generationTime}ms`);
+
+      if (!result.data?.length || !result.data[0].b64_json) {
+        console.error("❌ [Character Edit Tool] No image data returned");
+        throw new Error("Character generation failed: empty response");
+      }
+
+      const base64 = result.data[0].b64_json;
+      console.log("🖼️ [Character Edit Tool] Received 1 generated image");
+      console.log(`📊 [Character Edit Tool] Image data size: ${base64.length} characters`);
+      const { usage } = result
+      return {imageData: `data:image/${opts.format};base64,${base64}`, tokensUsed: usage?.total_tokens || -1}
+    } catch (error) {
+      console.error('❌ [Character Edit Tool] Error during API call:', error);
+      throw error;
+    }
+
+  }
+
   static addMask(bbox: BoundingBox, bbox2: BoundingBox, ...others: BoundingBox[]): BoundingBox {
     // Normalize to [x1,y1,x2,y2]
     const toEdges = (b: BoundingBox) => ({
@@ -54,11 +180,33 @@ export class ImageApi {
     };
   }
 
+  static markFinal(p: string){
+    const match = p.match(/([\w\\\/\-_\s.]+?)-(\d+)[.\-_]*(edit|mask)?-?(\d+)\.(png|jpeg)/g);
+    if (!match)
+      throw new Error(`Could image does not match expected naming pattern ${p}`);
+    const newName = `${match[1]}-final.${match[5] || match[4] || match[3] || match[2]}`
+    FileApi.rename(p, newName);
+    return newName;
+  }
+
   static async sizeAndOrientation(img: Buffer){
     const oriented = await sharp(img).rotate().toBuffer(); // auto-orient by EXIF
     const meta = await sharp(oriented).metadata();
     const W = meta.width!, H = meta.height!;
     return { oriented, W, H };
+  }
+
+  static avgScore(fixes: {score: number}[]){
+    return (fixes.reduce((acc, s) => acc + s.score, 0) / fixes.length)
+  }
+
+  static weightedScore(fixes: Record<string, {score: number}>, weights: Record<string, number>){
+    const values = Object.entries(fixes);
+    return values.reduce((acc, [k, s]) => {
+      if (!(k in weights))
+        throw new Error(`Weight for ${k} not found in weights`)
+      return acc + s.score * weights[k]
+    }, 0)
   }
 
   static async mask(imagePath: string, bbox: BoundingBox){

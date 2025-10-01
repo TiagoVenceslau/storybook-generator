@@ -8,19 +8,20 @@ import {
   OpenAIImageQuality,
   OpenAIImageSize,
 } from "../../constants";
-import { ImageFixDefectPromptStep } from "./image-fix-defect-prompt.step";
-import { ImageFixMaskImageStep } from "./image-fix-mask-image.step";
+import { ImageFixDefectPromptStep } from "../image/image-fix-defect-prompt.step";
+import { ImageFixMaskImageStep } from "../image/image-fix-mask-image.step";
 import { ImageApi } from "../../../ImageApi";
-import { ImageFixDefectStep } from "./image-fix-defect.step";
+import { ImageFixDefectStep } from "../image/image-fix-defect.step";
+import { CharacterFixDefectStep } from "./character-fix-defect.step";
 
-export const ImageEditWorkflow = createWorkflow({
-  id: 'image-edit-workflow',
+export const CharacterEditWorkflow = createWorkflow({
+  id: 'character-edit-workflow',
   description: 'Image edit workflow, given a list of defect, tries to correct them via the image edit api',
   inputSchema: z.object({
     project: z.string().default("miguel").describe("The project name (also where files are stored)"),
     style: z.string().describe('Visual style for image generation'),
     mood: z.string().optional().describe('the overall mood of the image'),
-    pose: z.string().default("Full body frontal, neutral pose, neutral expression, natural light").describe("the pose of the character"),
+    pose: z.string().describe("the pose of the character"),
     imagePath: z.string().describe("The path to the image to edit"),
     size: z.enum(Object.values(OpenAIImageSize) as any).optional().default(OpenAIImageSize.auto).describe("The size of the image to generate"),
     quality: z.enum(Object.values(OpenAIImageQuality) as any).optional().default(OpenAIImageQuality.low).describe("the quality of the image to generate"),
@@ -39,7 +40,7 @@ export const ImageEditWorkflow = createWorkflow({
     pose: z.string().describe('The pose that was applied'),
     model: z.string().describe("the model used")
   }),
-  steps: [ImageFixDefectPromptStep, ImageFixMaskImageStep, ImageFixDefectStep]
+  steps: [ImageFixDefectPromptStep, ImageFixMaskImageStep, CharacterFixDefectStep]
 }).map(async ({inputData}) => {
   const {fixes} = inputData;
   return fixes.map(s => {
@@ -84,5 +85,5 @@ export const ImageEditWorkflow = createWorkflow({
       references: initData.references,
     }
   }, {id: "map-for-editing"})
-  .then(ImageFixDefectStep)
+  .then(CharacterFixDefectStep)
   .commit()

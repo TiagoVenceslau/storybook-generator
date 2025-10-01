@@ -39,4 +39,9 @@ export class Project {
     this.createProjectFolder(project, character)
     return this.createFile(data, `${pose}${props ? props : ""}`, format, project, character)
   }
+
+  static storeScene(data: Buffer, project: string, scene: string, format: "png" | "jpeg"){
+    this.createProjectFolder(project)
+    return this.createFile(data, scene, format, project)
+  }
 }

@@ -40,6 +40,12 @@ export class FileApi {
     return true;
   }
 
+  static rename(p: string, p2: string) {
+    if (!this.fileExists(p))
+      throw new FileNotFound(`file ${p} does not exist`);
+    fs.renameSync(p, p2);
+  }
+
   static readFile(p: string){
     if (!this.fileExists(p))
       throw new FileNotFound(`file ${p} does not exist`);

@@ -4,6 +4,7 @@ import z from "zod";
 import { Score } from "./types";
 import { OpenAIImageFormats } from "../constants";
 import { ImageApi } from "../../ImageApi";
+import { safeParseJSON } from "../../utils";
 
 const client = new OpenAI();
 
@@ -106,7 +107,7 @@ Rating should be returned as JSON: {
     } as any);
 
     try  {
-      const json = JSON.parse(res.choices[0].message.content || "{}");
+      const json = safeParseJSON(res.choices[0].message.content || "{}");
       return {
         style: json
       };

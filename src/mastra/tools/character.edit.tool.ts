@@ -12,12 +12,12 @@ import {
 } from "../constants";
 import { ImageApi } from "../../ImageApi";
 
-export const ImageEditTool = createTool({
-  id: 'edit-image-tool',
-  description: 'Performs a selective edit on a given image, using a given prompt and a given image mask file',
+export const CharacterEditTool = createTool({
+  id: 'edit-character-tool',
+  description: 'Performs a selective edit on a given character image, using a given prompt and a given image mask file',
   inputSchema: z.object({
     prompt: z.string().describe("the edit to apply to the selected part of the image"),
-    description: z.string().describe("The overall description of the image"),
+    description: z.string().describe("The overall description of the character"),
     characteristics: z.array(z.string()).optional().describe("a list of the character's defining physical characteristics, eg: factial features, hair, scars, body types, height, tattoos, scars, etc, os a scene's main features"),
     situational: z.array(z.string()).optional().describe("a list of situational features (features than may belong to the image in a specific situation, but not always"),
     pose: z.string().optional().describe("the pose of eventual characters in the image"),
@@ -42,14 +42,24 @@ export const ImageEditTool = createTool({
     // metadata: ImageMetadata.optional()
   }),
   execute: async ({ context, mastra }) => {
-    console.log('🛠️ [Image Edit Tool] Tool execution started...');
+    console.log('🛠️ [Character Edit Tool] Tool execution started...');
 
     const { prompt, imagePath, maskImage, model, description, characteristics, situational, pose, style, mood, background, fidelity, format, quality, references } = context;
 
     const p = `
-    You are a professional image edition specialist using AI to make selective changes to images according to a provided request.
+        You are a professional image generation specialist using AI to edit character images to create character sheets for characters.
 
 ## Your Expertise
+- **Visual Interpretation**: Convert character descriptions and their defining physical characteristics into compelling character illustrations in the required style;
+- **Style Adaptation**: Apply various artistic styles consistently
+- **Character Visualization**: Bring characters to life with consistent appearances in the given pose;
+- **Attention to Detail**: you consistently respect, and correctly place the defining characteristics of the characters, or omit them if by because of the pose, clothing or pros, they are hidden from view;
+- **Character Posing**: You take extra case to pose the character as requested;
+- **Facial Details and Expressions**: you take extra care to create detailed, expressive and life-like faces;
+- **Anatomically Correct**: you have extra attention to hands, arms, legs, feet, to ensure they respect the character's anatomy;
+- **Pure White Backgrounds**: you specialize in making representation of the characters in given poses  for reference purposes (eg Character Sheet) so always put them against pure white background
+- **Framing**: your complete images always fit the frame_size;
+- **Complete character**: unless specified by the user, the complete character (body, limbs, extremities, head, both feet, both hands) must be in frame;
 - **Visual Interpretation**: Convert character descriptions and their defining physical characteristics into compelling character illustrations in the required style;
 - **Style Adaptation**: Apply various artistic styles consistently
 - **Attention to Detail**: you consistently respect, and correctly place the defining characteristics of the characters, or omit them if by because of the pose, clothing or pros, they are hidden from view;
@@ -59,6 +69,10 @@ export const ImageEditTool = createTool({
 
 ## Image Generation Guidelines
 - **CRITICAL STYLE RULES**:
+    - If the user asks for "Ghibli style", use "Ghibli-esque".
+    - If the user asks for "Disney style", use "Disney-esque".
+    - If the user asks for a specific author/studio use "in a \${author_or_studio_name}esque style".
+    - Do NOT use "Ghibli" or "Disney" or any author/studio directly as a style name.
     - You maintain the overall look and feel of the image unless specified otherwise.
 - **CRITICAL RULES**: 
     - Only affect change of the provided mask;
@@ -84,21 +98,14 @@ ${pose ? `## Pose\n${pose}` : ""}
 ## style:
 ${style}
 
-${mood ? `## Mood\n${mood}` : ""}
-
-${references && references.length ? `
-## IMPORTANT
- - the first image is the image to edit;
- - the remaining images are reference images;
-` : ""}
-Return the corrected image  without questions.`
+${mood ? `## Mood\n${mood}` : ""}`
     let imageData: {imageData: string, tokensUsed: number};
     try {
       const startTime = Date.now();
 
-      console.log(`🔄 [Image Edit Tool] Starting edit of ${imagePath}...`);
+      console.log(`🔄 [Character Edit Tool] Starting edit of ${imagePath}...`);
 
-      console.log(`🚀 [Image Edit Tool] Calling editImage...`);
+      console.log(`🚀 [Character Edit Tool] Calling editImage...`);
       imageData = await ImageApi.editImage(imagePath, maskImage, p, {
         model: model,
         format: format,
@@ -106,7 +113,7 @@ Return the corrected image  without questions.`
         background: background,
         fidelity: fidelity
       }, references);
-      console.log(`✅ [Image Edit Tool] Image data received (${imageData.imageData.length} characters)`);
+      console.log(`✅ [Character Edit Tool] Image data received (${imageData.imageData.length} characters)`);
 
 
       const matches = imageData.imageData.match(/^data:(.+);base64,(.*)$/);
@@ -116,7 +123,7 @@ Return the corrected image  without questions.`
 
       // Save image locally
       const localImagePath = FileApi.createVariation(imagePath, Buffer.from(matches[2], "base64"), "edit")
-      console.log(`✅ [Image Edit Tool] Image saved locally: ${localImagePath}`);
+      console.log(`✅ [Character Edit Tool] Image saved locally: ${localImagePath}`);
 
       const imageMetadata = {
         generationTime: Date.now() - startTime,
@@ -127,10 +134,10 @@ Return the corrected image  without questions.`
         format: format,
       };
 
-      console.log(`📊 [Image Edit Tool] Image metadata:`, imageMetadata);
+      console.log(`📊 [Character Edit Tool] Image metadata:`, imageMetadata);
 
       const totalTime = Date.now() - startTime;
-      console.log(`\n🎉 [Image Edit Tool] All images generated successfully!`);
+      console.log(`\n🎉 [Character Edit Tool] All images generated successfully!`);
 
       return {
         images: [{
@@ -144,7 +151,7 @@ Return the corrected image  without questions.`
         pose: pose,
       };
     } catch (error) {
-      console.error(`❌ [Image Edit Tool] Image generation failed:`, error);
+      console.error(`❌ [Character Edit Tool] Image generation failed:`, error);
       throw new Error(`Image edit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },

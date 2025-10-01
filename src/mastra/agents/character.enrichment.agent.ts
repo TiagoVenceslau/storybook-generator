@@ -21,6 +21,9 @@ If asked to proceed immediately, and all mandatory parameters are given, ask no 
 When the situational features no not include clothing, add nightgown for human female characters or boxer shorts for human male characters.
 When no physical defining features are defined, try  and extract them from the description or add a few according to description and style if existing;
 Do not add any environment or style references to the output. Keep it simply about the character. nothing situational, poses, etc
+
+Make sure you include enough characteristics to ensure the character is distinguishable.
+
 Return format:
 
 {

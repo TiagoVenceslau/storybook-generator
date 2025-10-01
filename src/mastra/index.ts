@@ -15,7 +15,7 @@ import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { automatedAgentNetworkWorkflow } from "./workflows/agent-network-automated-workflow";
 import { characterGeneratorAgent } from "./agents/character-generator-agent";
-import { createCharacterSheetWorkflow } from "./workflows/consistent-character-creation.workflow";
+import { createCharacterSheetWorkflow } from "./workflows/character-sheet-creation.workflow";
 import { CharacterEnrichmentAgent } from "./agents/character.enrichment.agent";
 import { ImageFixPromptAgent } from "./agents/image.fix.prompt.agent";
 

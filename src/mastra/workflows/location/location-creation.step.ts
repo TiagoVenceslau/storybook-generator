@@ -4,19 +4,18 @@ import { ImageData, ImageMetadata } from "../../tools/types";
 import { characterImageGenerationTool } from "../../tools/character.creation.tool";
 import { OpenAIImageFormats, OpenAIImageModels, OpenAIImageQuality, OpenAIImageSize } from "../../constants";
 
-export const characterCreationStep = createStep({
-  id: 'create-character-image',
-  description: 'generate a character image based on the description',
+export const locationCreationStep = createStep({
+  id: 'create-location-image',
+  description: 'generate a location image based on the description',
   inputSchema: z.object({
     project: z.string().describe("The project name (also where files are stored)"),
     model: z.enum(Object.values(OpenAIImageModels) as any).describe("the image model to be used"),
     style: z.string().default("Graphical Novel").describe('Visual style for image generation'),
     mood: z.string().optional().describe('the overall mood of the image'),
-    name: z.string().describe("The name of the character"),
-    pose: z.string().default("Full body frontal, neutral pose").describe("the pose of the character"),
-    description: z.string().describe("A physical description of the character"),
-    characteristics: z.array(z.string()).describe("a list of defining physical characteristics"),
-    situational: z.array(z.string()).describe("a list of situational physical characteristics"),
+    name: z.string().describe("The name of the location"),
+    description: z.string().describe("A description of the location"),
+    characteristics: z.array(z.string()).describe("a list of defining characteristics"),
+    situational: z.array(z.string()).describe("a list of situational characteristics"),
     numImages: z.number().default(1).describe("The number of images to create"),
     size: z.enum(Object.values(OpenAIImageSize) as any).optional().default(OpenAIImageSize.auto).describe("The size of the image to generate"),
     quality: z.enum(Object.values(OpenAIImageQuality) as any).optional().default(OpenAIImageQuality.low).describe("the quality of the image to generate"),
@@ -29,7 +28,7 @@ export const characterCreationStep = createStep({
     pose: z.string().describe('The pose that was applied'),
   }),
   execute: async ({ inputData, mastra, runtimeContext }) => {
-    const {style, name, project, pose, mood, model, situational, description, characteristics} = inputData;
+    const {style, name, project, mood, model, situational, description, characteristics} = inputData;
 
     const charCreationTool = characterImageGenerationTool;
     let result: any;
@@ -43,7 +42,6 @@ export const characterCreationStep = createStep({
         description: description,
         characteristics: characteristics,
         situational: situational,
-        pose: pose,
         style: style,
         mood: mood,
         numImages: 1,

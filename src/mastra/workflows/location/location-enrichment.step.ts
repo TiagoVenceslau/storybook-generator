@@ -1,25 +1,25 @@
 import { createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import { GenerateTextResult } from "@mastra/core";
-import { LocationEnrichmentAgent } from "../../agents/location.enrichment.agent";
+import { CharacterEnrichmentAgent } from "../../agents/character.enrichment.agent";
 
-export const characterEnrichmentStep  = createStep({
+export const locationEnrichmentStep  = createStep({
   id: "character-enrichment-step",
   description: "enrich a character's description to better suit the style, recognition across images and dramatic effect",
   inputSchema: z.object({
     style: z.string().optional().describe('Visual style for image generation'),
-    description: z.string().describe("the characters overall description"),
-    characteristics: z.array(z.string()).optional().describe("a list of defining physical characteristics"),
-    situational: z.array(z.string()).optional().describe("a list of defining physical characteristics"),
+    description: z.string().describe("the location's overall description"),
+    characteristics: z.array(z.string()).optional().describe("a list of defining characteristics"),
+    situational: z.array(z.string()).optional().describe("a list of situational characteristics"),
   }),
   outputSchema: z.object({
-    description: z.string().describe("A physical description of the character"),
-    characteristics: z.array(z.string()).describe("a list of defining physical characteristics"),
-    situational: z.array(z.string()).describe("a list of defining physical characteristics"),
+    description: z.string().describe("the location's overall description"),
+    characteristics: z.array(z.string()).optional().describe("a list of defining characteristics"),
+    situational: z.array(z.string()).optional().describe("a list of situational characteristics"),
   }),
   execute: async ({inputData, mastra}) => {
     const {style, description, characteristics, situational} = inputData;
-    const agent = LocationEnrichmentAgent;
+    const agent = CharacterEnrichmentAgent;
     let result: GenerateTextResult<any>;
     try {
       result = await agent.generate(`         
@@ -34,12 +34,12 @@ ${style ? `## style\n${style}`: ""}
 
 respond immediately`) as any
     } catch (e: unknown) {
-      throw new Error(`Failed call to LocationEnrichment agent: ${e}`)
+      throw new Error(`Failed call to CharacterEnrichment agent: ${e}`)
     }
 
     const {usage, text} = result;
 
-    console.log(`Location enrichment step took ${usage.promptTokens} prompt tokens, ${usage.completionTokens}, completion tokens, for a total of ${usage.totalTokens}`)
+    console.log(`Character enrichment step took ${usage.promptTokens} prompt tokens, ${usage.completionTokens}, completion tokens, for a total of ${usage.totalTokens}`)
     let json: {description: string, characteristics: string[], situational: string[]};
     try {
       json = JSON.parse(text)

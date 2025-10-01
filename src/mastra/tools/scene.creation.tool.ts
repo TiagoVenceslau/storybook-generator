@@ -4,19 +4,20 @@ import { OpenAI } from "openai";
 import { Project } from "../utils/project";
 import { OpenAIImageFormats, OpenAIImageModels, OpenAIImageQuality, OpenAIImageSize } from "../constants";
 import { ImageData } from "./types";
+import { Character, Location, Scene } from "../workflows/payloads";
 import { ImageApi } from "../../ImageApi";
 
-export const characterImageGenerationTool = createTool({
-  id: 'generate-character-image',
-  description: 'Generates character images with various art styles and saves them locally',
+export const sceneImageGenerationTool = createTool({
+  id: 'generate-scene-image',
+  description: 'Generates scene images with various art styles and saves them locally',
   inputSchema: z.object({
     project: z.string().describe("The project name (used to create folder to hold materials"),
-    name: z.string().describe("The character's name"),
-    description: z.string().describe("The overall description of the character"),
-    characteristics: z.array(z.string()).describe("a list of the character's defining physical characteristics, eg: factial features, hair, scars, body types, height, tattoos, scars, etc"),
-    situational: z.array(z.string()).describe("a list of situational physical features, eg: clothes, props, etc"), 
-    pose: z.string().default("front facing neutral pose, natural lighting").describe("the pose of the character"),
-    style: z.string().default("Graphic Novel").describe("The art style to apply"),
+    name: z.string().describe("The location's name"),
+    scene: Scene.describe("The scene descriptions and elements"),
+    characters: z.array(Character).describe("The full list of possible characters"),
+    locations: z.array(Location).describe("The full list of possible locations"),
+    shotType: z.string().describe("the camera shot or point of view"),
+    style: z.string().describe("The art style to apply"),
     mood: z.string().optional().describe("The overall mood to apply to the image"),
     numImages: z.number().default(1).describe('Number of images to generate (default: 1)'),
     model: z.enum(Object.values(OpenAIImageModels) as any).optional().default(OpenAIImageModels.GPT_IMAGE_1).describe("The model to be used to generate the images"),
@@ -28,30 +29,33 @@ export const characterImageGenerationTool = createTool({
     images: z.array(ImageData).describe('Array of generated images with local file paths'),
     totalImages: z.number().describe('Total number of images generated'),
     style: z.string().describe('The style that was applied'),
-    pose: z.string().describe('The pose that was applied'),
+    tokensUsed: z.number().describe("The token usage of the tool")
   }),
   execute: async ({ context, mastra, runtimeContext, runId }) => {
-    console.log('🛠️ [Character Generation Tool] Tool execution started...');
-    console.log(`📋 [Character Generation Tool] Input context:`, Object.assign({}, context, {
-      description: context.description.substring(0, 100) + "..."
-    }));
+    console.log('🛠️ [Scene generation Tool] Tool execution started...');
 
-    const { project, name, pose, model, description, format, quality, characteristics, situational, size, mood, style, numImages = 1 } = context;
+    const { project, name, model, locations, scene, shotType, format, quality, characters, size, mood, style, numImages = 1 } = context;
+
+    const location = locations.find(l => l.name === scene.location.name);
+    if (!location)
+      throw new Error(`Invalid location: ${scene.location.name}`)
+    let chars: any[] = [];
+    if (scene.characters && scene.characters.length)
+      chars = characters.filter(c => scene.characters?.map(c => c.name).includes(c.name)).map(c => Object.assign({}, c, {
+        situational: scene.characters?.find(c2 => c.name === c2.name)?.situational
+      }))
 
     const prompt = `
-    You are a professional image generation specialist using AI to create character sheets for characters.
+    You are a professional comic bool scene generation specialist using AI to create images for comic book scenes according to a given description, characteristics, shot type, characters and a visual style.
 
 ## Your Expertise
-- **Visual Interpretation**: Convert character descriptions and their defining physical characteristics into compelling character illustrations in the required style;
+- **Visual Interpretation**: Convert scene descriptions and their defining characteristics into compelling illustrations in the required style;
 - **Style Adaptation**: Apply various artistic styles consistently
-- **Character Visualization**: Bring characters to life with consistent appearances in the given pose;
-- **Attention to Detail**: you consistently respect, and correctly place the defining characteristics of the characters, or omit them if by because of the pose, clothing or pros, they are hidden from view;
-- **Character Posing**: You take extra case to pose the character as requested;
-- **Facial Details and Expressions**: you take extra care to create detailed, expressive and life-like faces;
-- **Anatomically Correct**: you have extra attention to hands, arms, legs, feet, to ensure they respect the character's anatomy;
-- **Pure White Backgrounds**: you specialize in making representation of the characters in given poses  for reference purposes (eg Character Sheet) so always put them against pure white background
+- **Scene Visualization**: Bring locations and characters to life with consistent appearances in the given pose;
+- **Attention to Detail**: you consistently respect, and correctly place the defining characteristics of the locations and characters, or omit them if by because perspective or  obstruction, they are hidden from view;
+- **Character posing**: you pose characters according to the provided descriptions and characteristics;
+- **Character expressions**: you draw characters with compelling expressions, matching the given description;
 - **Framing**: your complete images always fit the frame_size;
-- **Complete character**: unless specified by the user, the complete character (body, limbs, extremities, head, both feet, both hands) must be in frame;
 
 ## Image Generation Guidelines
 - **CRITICAL STYLE RULES**:
@@ -68,22 +72,35 @@ export const characterImageGenerationTool = createTool({
 - **Learning from Feedback**: Use insights from previous image generation feedback to improve current work
 - **Project Consistency**: Maintain visual consistency with user's established preferences and patterns
 
-Focus on creating character images that completely respect the description, meant as an image of a comic book or game character sheet.
+Focus on creating location images that completely respect the description, meant as an image of a comic book.
 
 ## frame_size
 ${size} 
  
-## character description
-${description}
+## scene description
+${scene.description}
 
-## Defining physical characteristics 
-${characteristics.join(";\n")}
+## location description 
+${location.description}
 
-## situational physical characteristics
-${situational.join(";\n")}
+## location defining characteristics 
+${location.characteristics.join("\n")}
 
-## Pose
-${pose}
+## location situational characteristics 
+${location.situational ? `## location situational characteristics\n${location.situational.join("\n")}` : ""}
+
+${chars.length ? `## characters\n${chars.map(c => `### Character name: ${c.name}
+###  Character description:
+${c.description}
+
+### Defining characteristics:
+${c.characteristics.join("\n")}
+
+### Situational Characteristics
+${c.situational.join("\n")}`)}` : ""}
+
+## ShotType
+${shotType}
 
 ## style:
 ${style}
@@ -95,18 +112,18 @@ ${mood ? `## Mood\n${mood}` : ""}
       const startTime = Date.now();
       const images = [];
 
-      console.log(`🔄 [Character Generation Tool] Starting generation of ${numImages} image(s)...`);
+      console.log(`🔄 [Scene generation Tool] Starting generation of ${numImages} image(s)...`);
 
       // Generate the specified number of images
       for (let i = 1; i <= numImages; i++) {
-        console.log(`\n🖼️ [Character Generation Tool] Generating image ${i} of ${numImages}...`);
+        console.log(`\n🖼️ [Scene generation Tool] Generating image ${i} of ${numImages}...`);
 
         // Create a unique prompt variation for each image
         const imagePrompt = `${prompt} - Image ${i} of ${numImages}`;
-        console.log(`📝 [Character Generation Tool] Image prompt: ${imagePrompt.substring(0, 80)}...`);
+        console.log(`📝 [Scene generation Tool] Image prompt: ${imagePrompt.substring(0, 80)}...`);
 
         // Use Google Imagen API for actual image generation
-        console.log(`🚀 [Character Generation Tool] Calling generateSceneImage...`);
+        console.log(`🚀 [Scene generation Tool] Calling generateSceneImage...`);
         imageData = await ImageApi.generateImage(imagePrompt, {
           model: model,
           format: format,
@@ -114,7 +131,7 @@ ${mood ? `## Mood\n${mood}` : ""}
           size: size,
           background: "opaque"
         });
-        console.log(`✅ [Character Generation Tool] Image data received (${imageData.imageData.length} characters)`);
+        console.log(`✅ [Scene generation Tool] Image data received (${imageData.imageData.length} characters)`);
 
         const matches = imageData.imageData.match(/^data:(.+);base64,(.*)$/);
         if (!matches) {
@@ -122,9 +139,9 @@ ${mood ? `## Mood\n${mood}` : ""}
         }
 
         // Save image locally
-        console.log(`💾 [Character Generation Tool] Saving character to project ${project}`);
-        const localImagePath = Project.storeCharacter(Buffer.from(matches[2], "base64"), project, name, pose, "png")
-        console.log(`✅ [Character Generation Tool] Image saved locally: ${localImagePath}`);
+        console.log(`💾 [Scene generation Tool] Saving character to project ${project}`);
+        const localImagePath = Project.storeScene(Buffer.from(matches[2], "base64"), project, name, "png")
+        console.log(`✅ [Scene generation Tool] Image saved locally: ${localImagePath}`);
 
         const imageMetadata = {
           generationTime: Date.now() - startTime,
@@ -135,7 +152,7 @@ ${mood ? `## Mood\n${mood}` : ""}
           tokensUsed: imageData.tokensUsed
         };
 
-        console.log(`📊 [Character Generation Tool] Image metadata:`, imageMetadata);
+        console.log(`📊 [Scene generation Tool] Image metadata:`, imageMetadata);
 
         images.push({
           imageUrl: localImagePath,
@@ -144,12 +161,12 @@ ${mood ? `## Mood\n${mood}` : ""}
           metadata: imageMetadata,
         });
 
-        console.log(`✅ [Character Generation Tool] Image ${i} completed successfully`);
+        console.log(`✅ [Scene generation Tool] Image ${i} completed successfully`);
       }
 
       const totalTime = Date.now() - startTime;
-      console.log(`\n🎉 [Character Generation Tool] All images generated successfully!`);
-      console.log(`📊 [Character Generation Tool] Summary:`, {
+      console.log(`\n🎉 [Scene generation Tool] All images generated successfully!`);
+      console.log(`📊 [Scene generation Tool] Summary:`, {
         totalImages: numImages,
         style: style,
         totalTime: `${totalTime}ms`,
@@ -160,12 +177,11 @@ ${mood ? `## Mood\n${mood}` : ""}
         images,
         totalImages: numImages,
         style,
-        pose,
         tokensUsed: images.reduce((accum, img) => accum + img.metadata.tokensUsed, 0)
       };
     } catch (error) {
-      console.error(`❌ [Character Generation Tool] Image generation failed:`, error);
-      throw new Error(`Image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(`❌ [Scene generation Tool] Image generation failed:`, error);
+      throw new Error(`Scene generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 });

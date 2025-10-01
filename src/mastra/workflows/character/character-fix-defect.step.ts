@@ -11,8 +11,8 @@ import {
 } from "../../constants";
 import { CharacterEditTool } from "../../tools/character.edit.tool";
 
-export const ImageFixDefectStep  = createStep({
-  id: "image-fix-defect-step",
+export const CharacterFixDefectStep  = createStep({
+  id: "character-fix-defect-step",
   description: "Given a defect and it's bounding box, perform an image edit to fix the defect",
   inputSchema: z.object({
     prompt: z.string().describe("the prompt to use to fix the image"),
@@ -39,7 +39,7 @@ export const ImageFixDefectStep  = createStep({
   }),
   execute: async ({inputData, mastra, runtimeContext,  runId}) => {
     const {prompt, imagePath, maskImage, model, description, characteristics, situational, pose, style, mood, format, fidelity, references, background, quality} = inputData;
-    const editTool = ImageEditTool;
+    const editTool = CharacterEditTool;
     let edit: z.infer<typeof editTool.outputSchema>;
     try {
       edit = await editTool.execute({context: {
